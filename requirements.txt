@@ -1,0 +1,13 @@
+pandas
+openpyxl
+duckdb
+dbt-core
+dbt-duckdb
+rapidfuzz
+python-dotenv
+openai
+tenacity
+streamlit
+plotly
+pytest
+jupyter
