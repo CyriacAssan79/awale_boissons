@@ -1,0 +1,7 @@
+awale_reporting:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: /mnt/c/Users/KSOMS/Favorites/awale_boissons/data/awale.duckdb
+      threads: 4

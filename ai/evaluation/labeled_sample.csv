@@ -1,0 +1,51 @@
+﻿comment_id,platform,published_at,author_handle,comment_text,like_count,reply_to_id,language_human,sentiment_human,theme_human,product_human,is_spam_human,annotation_notes
+C000360,Instagram,2026-01-27 10:27:00,@mariam943,"C'EST ENJAILLANT, NO DRAP À MARCORY",1,,nouchi,positive,other,none,false,"Expression nouchi de satisfaction générale, sans thème produit précis."
+C001718,Facebook,2026-04-26 21:06:00,@serge654,stock fini à Marcory zone 4 dèh à Riviera 3 ??,5,,fr,neutral,availability,unknown,false,"Question sur rupture de stock dans deux zones, produit non précisé."
+C001721,Facebook,2026-04-26 14:00:00,@kevin5,la pub pendant le match était bien placée,7,,fr,positive,promotion,none,false,
+C000551,TikTok,2026-02-08 16:12:00,@chris451,c'est trop bon le bissap Awalé 😍,0,,fr,positive,taste,bissap,false,
+C000239,Instagram,2026-01-18 10:12:00,@kevin997,la vidéo TikTok est drôle 😂 à Marcory,0,,fr,positive,promotion,none,false,
+C002243,Facebook,2026-06-04 13:06:00,@kevin921,Boostez vos followers 📈 DM,2,,fr,neutral,other,none,true,"Message promotionnel automatique (follow/DM), sans rapport avec le produit."
+C000769,Facebook,2026-02-21 23:47:00,@fatou910,la bouteille fuit un peu,1,,fr,negative,packaging,unknown,false,
+C001866,Instagram,2026-05-07 22:14:00,@yao283,pourquoi il n'y a plus rien en rayon ? à Riviera 3,1,,fr,negative,availability,unknown,false,
+C002550,Facebook,2026-06-27 10:06:00,@stephane803,mes  enfants adorent le bissap Awalé,2,,fr,positive,taste,bissap,false,
+C000919,Instagram,2026-03-03 14:51:00,@awa_449,svp le 33cl est parfait pour le bureau 👌,1,,fr,positive,packaging,unknown,false,"Remarque sur le format 33cl, produit non précisé."
+C001124,Facebook,2026-03-16 22:43:00,@yao825,mes enfants adorent le bissap Awalé,4,,fr,positive,taste,bissap,false,
+C002597,Instagram,2026-06-30 14:23:00,@awa_216,meilleur bissap d'Abidjan wallah...,1,,nouchi,positive,taste,bissap,false,
+C001439,TikTok,2026-04-05 15:53:00,@abou101,commande annulée sans explication,2,,fr,negative,delivery,none,false,
+C001348,Instagram,2026-03-30 07:35:00,@chris752,mon  frère c'est cher dèh ooh,3,,nouchi,negative,price,unknown,false,
+C002532,TikTok,2026-06-25 11:53:00,@bakary48,❤️❤️❤️,5,,other,positive,other,none,false,"Emoji seuls, sans texte exploitable."
+C001982,Instagram,2026-05-15 19:52:00,@stephane795,"c'est enjaillant, no drap à Yopougon",1,,nouchi,positive,other,none,false,
+C001195,TikTok,2026-03-20 13:13:00,@didi389,"j'ai vu à la radio, j'ai testé, je ne regrette pas 🇨🇮",0,,fr,positive,promotion,none,false,Mentionne la radio comme canal déclencheur d'achat.
+C001260,Facebook,2026-03-24 09:09:00,@ibrahim115,"j'ai vu à la radio, j'ai testé, je ne regrette pas",4,,fr,positive,promotion,none,false,Doublon quasi identique de C001195.
+C001456,Instagram,2026-04-07 07:44:00,@rita754,wê on veut le gingembre,5,,nouchi,neutral,product_question,gingembre,false,Demande/souhait plutôt qu'avis tranché.
+C002509,Facebook,2026-06-23 18:38:00,@stephane611,franchement quels sont les conservateurs dedans ?,1,,fr,neutral,health,unknown,false,
+C002331,Facebook,2026-06-11 23:34:00,@didi662,le stand hier à Cocody 🔥 dégustation top,1,,fr,positive,promotion,none,false,Événement/dégustation à Cocody.
+C000974,Instagram,2026-03-06 23:58:00,@abou444,"j'ai commandé sur WhatsApp, arrivé rapide 👍",1,,fr,positive,delivery,none,false,
+C002483,Facebook,2026-06-21 13:46:00,@traore564,rupture partout à Angré depuis 2 semaines 😤 à Bingerville,6,,fr,negative,availability,unknown,false,
+C001316,Facebook,2026-03-28 17:03:00,@kone.939,❤️❤️❤️,0,,other,positive,other,none,false,Emoji seuls.
+C000727,Instagram,2026-02-19 07:55:00,@ibrahim284,arrêtez les pubs trop répétitives svp,0,,fr,negative,promotion,none,false,
+C002549,Instagram,2026-06-27 10:28:00,@bakary621,"slt je prends 2 bouteilles chaque soir, top",0,,fr,positive,taste,unknown,false,
+C000242,Facebook,2026-01-19 19:05:00,@traore204,l'étiquette se décolle au frigo,10,,fr,negative,packaging,unknown,false,
+C001912,Instagram,2026-05-10 19:41:00,@kone.109,slt stock fini à Marcory zone 4 à Abobo,0,,fr,negative,availability,unknown,false,
+C002233,Instagram,2026-06-03 11:27:00,@kevin340,eh le bouye est doux paa 😋,0,,nouchi,positive,taste,bouye,false,
+C001899,Instagram,2026-05-09 17:02:00,@chris914,svp on ne trouve plus 😭 c'est fini ?,3,,fr,negative,availability,unknown,false,
+C000270,Instagram,2026-01-21 20:50:00,@rita560,"vraiment bravo, c'est bien fait",1,,fr,positive,other,none,false,
+C000501,TikTok,2026-02-04 19:05:00,@aya732,Suis moi je te suis 🔙,3,,fr,neutral,other,none,true,"Commentaire type follow-for-follow, probablement automatisé."
+C001673,Instagram,2026-04-22 20:45:00,@aya21,eh votre stand à Yopougon était bien organisé à Yopougon,6,,fr,positive,promotion,none,false,
+C002739,Instagram,2026-02-19 21:31:00,@traore493,"j'ai vu à la radio, j'ai testé, je ne regrette pas",6,,fr,positive,promotion,none,false,Doublon quasi identique de C001195/C001260.
+C001269,TikTok,2026-03-25 13:33:00,@junior785,PRÊT D'ARGENT RAPIDE SANS GARANTIE contactez,17,,fr,neutral,other,none,true,"Publicité de prêt d'argent, hors sujet - spam manifeste."
+C002291,TikTok,2026-06-08 18:08:00,@fatou367,le bouye est doux paa 😋,3,,nouchi,positive,taste,bouye,false,Doublon quasi identique de C002233.
+C001107,Facebook,2026-03-14 13:57:00,@junior314,rupture partout à Angré depuis 2 semaines 😤 😋,2,,fr,negative,availability,unknown,false,Emoji 😋 incohérent avec le ton de plainte - probable artefact.
+C000071,Facebook,2026-01-06 17:19:00,@bakary318,cé sucré comment ? il y a du sucre ajouté ? 🔥,4,,nouchi,neutral,health,unknown,false,
+C002472,Instagram,2026-06-20 14:14:00,@junior18,trop cher pour la qualité désolé dèh à Yopougon 🥤,1,,nouchi,negative,price,unknown,false,
+C001457,TikTok,2026-04-07 23:41:00,@didi321,le prix a encore monté ?,4,,fr,negative,price,unknown,false,
+C001692,TikTok,2026-04-24 19:26:00,@kone.950,"j'ai fait 3 boutiques, rien qui est comme moi ? 👏",9,,fr,positive,other,unknown,false,"Formulation peu claire (« rien qui est comme moi »), lu comme un compliment vu l'emoji 👏."
+C000771,Instagram,2026-02-21 11:47:00,@awa_90,le 33cl est parfait pour le bureau 👌 hein à Angré,9,,fr,positive,packaging,unknown,false,Doublon quasi identique de C000919.
+C002064,TikTok,2026-05-22 12:03:00,@awa_887,le gingembre est enjaillant dèh 🔥 😋!!!,1,,nouchi,positive,taste,gingembre,false,
+C000263,Facebook,2026-01-21 07:54:00,@awa_619,y a pas au maquis de Yopougon,2,,fr,negative,availability,unknown,false,
+C002035,Instagram,2026-05-19 20:41:00,@abou539,"qualité au top, continuez comme ça 💪 mdr",24,,fr,positive,taste,unknown,false,
+C001368,Facebook,2026-03-31 20:37:00,@junior322,@awale_ci vous avez une version sans sucre ?!!,0,,fr,neutral,product_question,unknown,false,
+C002139,Facebook,2026-05-28 11:54:00,@ibrahim522,c'est sucré comment ? il y a du sucre ajouté ? hein,13,,fr,neutral,health,unknown,false,Doublon quasi identique de C000071.
+C002022,Instagram,2026-05-18 08:17:00,@fatou308,le gingembre est enjaillant dèh 🔥 🇨🇮,1,,nouchi,positive,taste,gingembre,false,Doublon quasi identique de C002064.
+C001694,TikTok,2026-04-24 11:56:00,@stephane953,"plus de bissap dans mon quartier, c'est comment ?!!",0,,fr,negative,availability,bissap,false,
+C001930,Instagram,2026-05-12 15:19:00,@chris592,the hibiscus one is great,5,,en,positive,taste,bissap,false,« Hibiscus » désigne le bissap.

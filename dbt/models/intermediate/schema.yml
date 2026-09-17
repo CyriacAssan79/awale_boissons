@@ -1,0 +1,145 @@
+version: 2
+
+models:
+  - name: int_media_reconciliation
+
+    description: >
+      Réconciliation mensuelle par canal entre les dépenses du
+      campaign export et les montants planifiés/facturés du media plan.
+      Le modèle conserve également les cas présents dans une seule source.
+
+    columns:
+      - name: month
+        description: "Mois d'analyse"
+        tests:
+          - not_null
+
+      - name: channel
+        description: "Canal marketing normalisé"
+        tests:
+          - not_null
+
+      - name: source_coverage
+        description: >
+          Indique si les informations sont disponibles dans les deux
+          sources ou dans une seule.
+
+      - name: campaign_vs_invoiced_variance_fcfa
+        description: >
+          Dépense issue du campaign export moins facture connue
+          du media plan.
+
+      - name: campaign_to_invoiced_ratio
+        description: >
+          Rapport entre dépense campaign export et montant facturé.
+
+  - name: int_sales_calendar
+    description: >
+      Calendrier quotidien de la période d'analyse permettant de
+      distinguer les jours disposant de données de ventes des jours
+      où la source était absente.
+
+    columns:
+      - name: sale_date
+        description: "Date du calendrier"
+        tests:
+          - not_null
+          - unique
+
+      - name: month
+        description: "Mois de la date"
+
+      - name: week_start
+        description: "Début de la semaine"
+
+      - name: has_sales_data
+        description: >
+          TRUE si au moins une observation de vente existe pour la date.
+
+      - name: is_missing_sales_day
+        description: >
+          TRUE lorsque aucune observation de vente n'existe dans la source.
+
+  - name: int_campaign_normalized
+
+    description: >
+      Enrichissement déterministe des campagnes marketing avec
+      extraction du produit et du mois mentionné dans le nom de campagne.
+
+    columns:
+      - name: month
+        description: "Mois de rattachement provenant de la date de campagne"
+        tests:
+          - not_null
+
+      - name: channel
+        description: "Canal marketing"
+        tests:
+          - not_null
+
+      - name: campaign_name
+        description: "Nom de campagne"
+        tests:
+          - not_null
+
+  - name: int_whatsapp_items
+
+    description: >
+      Transformation des commandes WhatsApp en lignes produit.
+      Les cas simples sont parsés par règles déterministes.
+      Les cas non résolus sont identifiés pour un traitement IA ultérieur.
+
+    columns:
+      - name: whatsapp_row_id
+        description: "Identifiant technique de la commande source"
+        tests:
+          - not_null
+
+      - name: order_ref
+        description: "Référence métier de commande"
+        tests:
+          - not_null
+
+      - name: product
+        description: "Produit extrait"
+
+      - name: format
+        description: "Format extrait"
+
+      - name: quantity
+        description: "Quantité extraite"
+        tests:
+          - not_null
+
+      - name: parse_status
+        description: "Résultat du parsing"
+
+  - name: int_whatsapp_order_quality
+    description: "Qualité du parsing WhatsApp au grain d'une ligne de commande source."
+    columns:
+      - name: whatsapp_row_id
+        description: "Identifiant technique de la ligne source WhatsApp."
+        tests:
+          - not_null
+          - unique
+
+      - name: order_ref
+        description: "Référence de commande source."
+
+      - name: item_line_count
+        description: "Nombre de lignes d'items produites pour la commande."
+
+      - name: parsed_item_lines
+        description: "Nombre de lignes entièrement parsées."
+
+      - name: unresolved_item_lines
+        description: "Nombre de lignes avec produit inconnu."
+
+      - name: missing_format_lines
+        description: "Nombre de lignes dont le produit est connu mais le format absent."
+
+      - name: quantity_total
+        description: "Quantité totale extraite des lignes d'items."
+
+      - name: order_parse_status
+        description: "Statut synthétique du parsing de la commande."

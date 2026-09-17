@@ -1,0 +1,185 @@
+version: 2
+
+models:
+  - name: stg_campaign_spend
+
+    description: >
+      Données marketing nettoyées et typées à partir de
+      raw_campaign_spend_export.
+
+    columns:
+      - name: platform
+        description: "Plateforme marketing"
+        tests:
+          - not_null
+
+      - name: campaign_name
+        description: "Nom de campagne nettoyé"
+        tests:
+          - not_null
+
+      - name: date_start
+        description: "Date de début de campagne"
+        tests:
+          - not_null
+
+      - name: date_end
+        description: "Date de fin de campagne"
+        tests:
+          - not_null
+
+      - name: spend_fcfa
+        description: "Dépense convertie en FCFA"
+        tests:
+          - not_null
+
+      - name: objective_normalized
+        description: "Objectif marketing normalisé"
+        tests:
+          - not_null
+
+  - name: stg_media_plan
+    description: >
+      Plan média nettoyé et normalisé. Les budgets planifiés et facturés
+      restent séparés et les factures manquantes sont conservées comme NULL.
+
+    columns:
+      - name: plan_id
+        description: "Identifiant du plan média"
+        tests:
+          - not_null
+
+      - name: month_date
+        description: "Premier jour du mois du plan"
+        tests:
+          - not_null
+
+      - name: channel
+        description: "Canal marketing normalisé"
+        tests:
+          - not_null
+
+      - name: planned_budget_fcfa
+        description: "Budget planifié en FCFA"
+        tests:
+          - not_null
+
+      - name: variance_fcfa
+        description: >
+          Écart entre le montant facturé et le budget planifié.
+          NULL lorsque la facturation est absente.
+
+  - name: stg_pos_sales_daily
+    description: >
+      Ventes quotidiennes des points de vente nettoyées et normalisées.
+      Les retours négatifs sont conservés afin de permettre le calcul
+      du chiffre d'affaires net.
+
+    columns:
+      - name: sale_date
+        description: "Date de vente"
+        tests:
+          - not_null
+
+      - name: pos_id
+        description: "Identifiant du point de vente"
+        tests:
+          - not_null
+
+      - name: commune
+        description: "Commune normalisée"
+        tests:
+          - not_null
+
+      - name: channel
+        description: "Canal de vente normalisé"
+        tests:
+          - not_null
+
+      - name: product_sku
+        description: "SKU du produit"
+        tests:
+          - not_null
+
+      - name: units_sold
+        description: "Unités vendues, retours inclus sous forme négative"
+        tests:
+          - not_null
+
+      - name: revenue_fcfa
+        description: "Revenu signé ; négatif en cas de retour"
+        tests:
+          - not_null
+
+      - name: net_revenue_fcfa
+        description: "CA net signé"
+        tests:
+          - not_null
+
+  - name: stg_whatsapp_orders
+    description: >
+      Commandes WhatsApp nettoyées et normalisées. Les références
+      répétées sont conservées car elles peuvent correspondre à
+      plusieurs événements de commande.
+
+    columns:
+      - name: whatsapp_row_id
+        description: "Identifiant technique de ligne"
+        tests:
+          - not_null
+
+      - name: order_ref
+        description: "Référence de commande"
+        tests:
+          - not_null
+
+      - name: received_at
+        description: "Date et heure de réception"
+        tests:
+          - not_null
+
+      - name: customer_phone
+        description: "Téléphone client normalisé"
+        tests:
+          - not_null
+
+      - name: items_text
+        description: "Description texte des produits commandés"
+        tests:
+          - not_null
+
+      - name: status
+        description: "Statut de commande normalisé"
+        tests:
+          - not_null
+
+  - name: stg_social_comments
+    description: >
+      Commentaires sociaux nettoyés et dédupliqués pour préparer
+      l'enrichissement IA de la voix client.
+
+    columns:
+      - name: comment_id
+        description: "Identifiant du commentaire"
+        tests:
+          - not_null
+
+      - name: platform
+        description: "Plateforme normalisée"
+        tests:
+          - not_null
+
+      - name: published_at
+        description: "Date de publication"
+        tests:
+          - not_null
+
+      - name: comment_text
+        description: "Texte du commentaire"
+        tests:
+          - not_null
+
+      - name: like_count
+        description: "Nombre de likes"
+        tests:
+          - not_null

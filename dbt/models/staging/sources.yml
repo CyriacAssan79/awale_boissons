@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    description: "Tables brutes importées depuis les fichiers Awalé Boissons"
+
+    tables:
+      - name: raw_campaign_spend_export
+      - name: raw_media_plan
+      - name: raw_pos_sales_daily
+      - name: raw_social_comments
+      - name: raw_whatsapp_orders
+      - name: raw_social_comments_predictions_v2

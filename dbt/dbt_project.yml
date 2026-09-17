@@ -1,0 +1,14 @@
+name: awale_reporting
+version: "1.0.0"
+config-version: 2
+
+profile: awale_reporting
+
+model-paths: ["models"]
+
+models:
+  awale_reporting:
+    staging:
+      +materialized:
+        view #nous voulons que le staging soit une transformation logique de RAW,
+        #sans dupliquer inutilement les données dans le fichier DuckDB, d'où le view
