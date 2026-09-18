@@ -25,6 +25,22 @@ order_quality AS (
 
         MAX(amount_fcfa) IS NULL AS amount_missing,
 
+        /*
+            Montant invraisemblable (voir var whatsapp_max_plausible_amount_fcfa).
+            Le montant brut est conservé dans amount_fcfa ; il n'est ni corrigé
+            ni supprimé, seulement exclu des totaux via amount_plausible_fcfa.
+        */
+        COALESCE(
+            MAX(amount_fcfa) > {{ var('whatsapp_max_plausible_amount_fcfa') }},
+            FALSE
+        ) AS amount_outlier,
+
+        CASE
+            WHEN MAX(amount_fcfa)
+                 <= {{ var('whatsapp_max_plausible_amount_fcfa') }}
+                THEN MAX(amount_fcfa)
+        END AS amount_plausible_fcfa,
+
         COUNT(*) AS item_line_count,
 
         SUM(

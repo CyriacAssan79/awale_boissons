@@ -8,6 +8,7 @@ import streamlit as st
 from theme import (
     BISSAP,
     BOUYE,
+    PRODUCT_COLORS,
     SENTIMENT_COLORS,
     apply_theme,
     card,
@@ -18,6 +19,7 @@ from theme import (
     section,
     show_chart,
     sidebar_brand,
+    subsection,
 )
 
 
@@ -141,6 +143,33 @@ whatsapp = load_query(
     """
 )
 
+
+def safe_query(query: str) -> pd.DataFrame | None:
+    """Comme load_query, mais renvoie None si la table ou une colonne n'existe pas
+    encore (base à reconstruire avec python run_pipeline.py) au lieu de planter."""
+    try:
+        return load_query(query)
+    except duckdb.Error:
+        return None
+
+
+product_mix = safe_query(
+    """
+    SELECT *
+    FROM mart_product_mix_monthly
+    ORDER BY month, product_sku
+    """
+)
+
+whatsapp_reachat = safe_query(
+    """
+    SELECT
+        COUNT(*) FILTER (WHERE has_delivered_order) AS customers_with_delivery,
+        COUNT(*) FILTER (WHERE is_repeat_customer) AS repeat_customers
+    FROM mart_whatsapp_customers
+    """
+)
+
 social_available = table_exists("mart_social_monthly")
 
 
@@ -210,6 +239,12 @@ total_units = monthly_filtered["net_units_sold"].sum()
 
 missing_days = monthly_filtered["missing_sales_days"].sum()
 
+# Un mois sans information de couverture (NaN) ne doit jamais passer pour un
+# mois complet : pandas ignore les NaN dans sum(), il faut donc le tester.
+unknown_coverage_months = monthly_filtered.loc[
+    monthly_filtered["missing_sales_days"].isna(), "month"
+]
+
 st.write("")
 
 col1, col2, col3, col4 = st.columns(4)
@@ -231,6 +266,13 @@ if missing_days > 0:
     st.warning(
         "Attention : la période sélectionnée contient des jours sans données "
         "de ventes. Les comparaisons doivent tenir compte de cette couverture."
+    )
+
+if not unknown_coverage_months.empty:
+    st.warning(
+        "Couverture des ventes inconnue pour : "
+        + ", ".join(month_label(m) for m in unknown_coverage_months)
+        + ". Ces mois ne doivent pas être lus comme complets."
     )
 
 
@@ -336,7 +378,7 @@ with card("spend_table"):
 section(
     2,
     "Que se passe-t-il côté ventes ?",
-    "Chiffre d'affaires net, unités vendues et couverture des données de ventes.",
+    "Chiffre d'affaires net, unités vendues, mix produit et couverture des données de ventes.",
 )
 
 sales_chart = monthly_filtered[["month", "net_revenue_fcfa"]].copy()
@@ -445,6 +487,104 @@ with col2:
         )
 
 
+subsection("Mix produit", "Ventes des points de vente (hors commandes WhatsApp)")
+
+if product_mix is None or product_mix.empty:
+
+    st.info(
+        "Le mix produit n'est pas encore disponible dans la base. "
+        "Exécuter python run_pipeline.py pour construire mart_product_mix_monthly."
+    )
+
+else:
+
+    mix = product_mix[product_mix["month"].isin(active_months)].copy()
+    mix["month_label"] = mix["month"].map(month_label)
+
+
+    with card("product_mix_chart"):
+        by_month = (
+            mix.groupby(["month", "month_label", "product"], as_index=False)[
+                "net_revenue_fcfa"
+            ].sum()
+        )
+
+        fig_mix = px.bar(
+            by_month,
+            x="month_label",
+            y="net_revenue_fcfa",
+            color="product",
+            color_discrete_map=PRODUCT_COLORS,
+            title="CA net par produit et par mois",
+            labels={
+                "month_label": "",
+                "net_revenue_fcfa": "CA net (FCFA)",
+                "product": "Produit",
+            },
+        )
+
+        fig_mix.update_traces(marker_cornerradius=4)
+        fig_mix.update_xaxes(type="category")
+        fig_mix.update_yaxes(tickformat=".2s", title=None)
+        fig_mix.update_layout(legend_title_text="")
+
+        show_chart(fig_mix, height=340)
+
+    with card("product_mix_table"):
+        card_title("Par produit et format — période sélectionnée")
+
+        sku = (
+            mix.groupby(["product", "format"], as_index=False)
+            .agg(
+                net_units=("net_units", "sum"),
+                net_revenue_fcfa=("net_revenue_fcfa", "sum"),
+                net_litres=("net_litres", "sum"),
+            )
+            .sort_values("net_revenue_fcfa", ascending=False)
+        )
+
+        total_revenue_mix = sku["net_revenue_fcfa"].sum()
+
+        sku["share"] = (
+            (sku["net_revenue_fcfa"] / total_revenue_mix * 100).round(1)
+            if total_revenue_mix
+            else 0.0
+        )
+        sku["per_litre"] = (
+            sku["net_revenue_fcfa"] / sku["net_litres"]
+        ).round(0)
+        sku["net_units"] = sku["net_units"].round(0)
+        sku["net_revenue_fcfa"] = sku["net_revenue_fcfa"].round(0)
+
+        st.dataframe(
+            sku[["product", "format", "net_units", "net_revenue_fcfa", "share", "per_litre"]],
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "product": "Produit",
+                "format": st.column_config.TextColumn("Format", width="small"),
+                "net_units": st.column_config.NumberColumn(
+                    "Unités", format="localized", width="small"
+                ),
+                "net_revenue_fcfa": st.column_config.NumberColumn(
+                    "CA net (FCFA)", format="localized"
+                ),
+                "share": st.column_config.ProgressColumn(
+                    "Part du CA (%)", format="%.1f", min_value=0, max_value=100
+                ),
+                "per_litre": st.column_config.NumberColumn(
+                    "FCFA / litre", format="localized", width="small"
+                ),
+            },
+        )
+
+    if (mix["month_missing_sales_days"].fillna(0) > 0).any():
+        st.caption(
+            "Les mois avec des jours de ventes manquants sont incomplets : leurs volumes "
+            "ne se comparent pas à ceux d'un mois complet."
+        )
+
+
 # =====================================================================
 # BLOC 3 — CUSTOMER VOICE
 # =====================================================================
@@ -452,7 +592,7 @@ with col2:
 section(
     3,
     "Que disent les clients ?",
-    "Sentiment, thèmes et produits mentionnés dans les commentaires.",
+    "Sentiment, thèmes et produits dans les commentaires, et commandes WhatsApp.",
 )
 
 if social_available and not social.empty:
@@ -639,6 +779,145 @@ else:
         "La mart Customer Voice n'est pas disponible. "
         "Exécuter dbt pour construire mart_social_monthly."
     )
+
+
+# -----------------------------------------------------------------
+# Commandes WhatsApp (livraison)
+# -----------------------------------------------------------------
+
+subsection("Commandes WhatsApp", "Canal livraison : commandes, produits demandés, réachat")
+
+whatsapp_filtered = whatsapp[whatsapp["month"].isin(active_months)].copy()
+
+if whatsapp_filtered.empty:
+
+    st.info("Aucune commande WhatsApp sur la période sélectionnée.")
+
+else:
+
+    orders = whatsapp_filtered["orders"].sum()
+    delivered = whatsapp_filtered["delivered_orders"].sum()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("Commandes WhatsApp", integer(orders))
+
+    with col2:
+        st.metric("Commandes livrées", integer(delivered))
+
+    with col3:
+        st.metric("Unités commandées", integer(whatsapp_filtered["total_units"].sum()))
+
+    with col4:
+        if whatsapp_reachat is None or not whatsapp_reachat["customers_with_delivery"].iloc[0]:
+            st.metric("Réachat (livrées)", "—")
+        else:
+            with_delivery = whatsapp_reachat["customers_with_delivery"].iloc[0]
+            repeaters = whatsapp_reachat["repeat_customers"].iloc[0]
+            st.metric(
+                "Réachat (livrées)",
+                f"{repeaters / with_delivery * 100:.1f} %",
+                help=(
+                    f"{integer(repeaters)} clients sur {integer(with_delivery)} ayant reçu au "
+                    "moins une commande ont reçu au moins deux commandes. Calculé sur toute la "
+                    "période, pas sur la sélection. Le client est un numéro de téléphone "
+                    "normalisé, pas une identité vérifiée."
+                ),
+            )
+
+    st.write("")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        with card("whatsapp_products"):
+            wa_products = pd.DataFrame(
+                {
+                    "product": ["bissap", "gingembre", "bouye"],
+                    "units": [
+                        whatsapp_filtered["bissap_units"].sum(),
+                        whatsapp_filtered["gingembre_units"].sum(),
+                        whatsapp_filtered["bouye_units"].sum(),
+                    ],
+                }
+            ).sort_values("units", ascending=False)
+
+            fig_wa = px.bar(
+                wa_products,
+                x="product",
+                y="units",
+                color="product",
+                color_discrete_map=PRODUCT_COLORS,
+                title="Unités commandées par produit",
+                labels={"product": "", "units": "Unités"},
+                text="units",
+            )
+
+            fig_wa.update_traces(
+                textposition="outside",
+                cliponaxis=False,
+                marker_cornerradius=6,
+            )
+            fig_wa.update_layout(showlegend=False)
+            fig_wa.update_yaxes(title=None)
+
+            show_chart(fig_wa, height=320)
+
+            st.caption(
+                "Unités lues dans le texte des commandes : le format n'est pas toujours précisé, "
+                "et une commande sans produit reconnu n'est pas comptée dans un produit."
+            )
+
+    with col2:
+        with card("whatsapp_amounts"):
+            card_title("Montants des commandes livrées")
+
+            needed = [
+                "delivered_amount_missing_orders",
+                "delivered_outlier_amount_orders",
+            ]
+
+            if all(c in whatsapp_filtered.columns for c in needed):
+                missing_amount = whatsapp_filtered["delivered_amount_missing_orders"].sum()
+                outlier_amount = whatsapp_filtered["delivered_outlier_amount_orders"].sum()
+
+                amounts = pd.DataFrame(
+                    {
+                        "Commandes livrées": [
+                            "Total",
+                            "dont sans montant",
+                            "dont montant invraisemblable (exclu)",
+                            "dont montant exploitable",
+                        ],
+                        "Nombre": [
+                            delivered,
+                            missing_amount,
+                            outlier_amount,
+                            delivered - missing_amount - outlier_amount,
+                        ],
+                    }
+                )
+
+                st.dataframe(
+                    amounts,
+                    hide_index=True,
+                    width="stretch",
+                    column_config={
+                        "Nombre": st.column_config.NumberColumn(format="localized"),
+                    },
+                )
+
+                st.caption(
+                    "Un montant absent ou invraisemblable n'est pas compté à zéro : il est "
+                    "inconnu. Aucun revenu livraison n'est donc affiché, ce serait une "
+                    "extrapolation."
+                )
+            else:
+                st.info(
+                    "Le détail des montants n'est pas encore dans la base. "
+                    "Exécuter python run_pipeline.py pour le calculer."
+                )
 
 
 # =====================================================================

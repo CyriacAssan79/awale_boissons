@@ -637,14 +637,14 @@ SELECT
 
     CASE
         WHEN spend_currency = 'EUR'
-            THEN 655.0
+            THEN {{ var('eur_to_fcfa_rate') }}
         ELSE 1.0
     END AS fx_rate_to_fcfa,
 
     ROUND(
         CASE
             WHEN spend_currency = 'EUR'
-                THEN spend_amount * 655.0
+                THEN spend_amount * {{ var('eur_to_fcfa_rate') }}
             ELSE spend_amount
         END,
         2

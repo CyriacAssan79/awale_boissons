@@ -19,13 +19,44 @@ SHEETS = {
     "social_comments": "social_comments",
 }
 
+# Colonnes que les modèles dbt (staging) lisent : si l'une manque, mieux vaut
+# s'arrêter ici avec un message clair que d'échouer plus loin dans dbt.
+REQUIRED_COLUMNS = {
+    "campaign_spend_export": [
+        "platform", "campaign_name", "date_start", "date_end",
+        "spend", "impressions", "clicks", "objective",
+    ],
+    "media_plan": [
+        "plan_id", "month", "channel", "planned_budget_fcfa",
+        "invoiced_fcfa", "objective", "owner", "notes",
+    ],
+    "pos_sales_daily": [
+        "sale_date", "pos_id", "pos_name", "commune", "channel",
+        "product_sku", "units_sold", "revenue_fcfa",
+    ],
+    "whatsapp_orders": [
+        "order_ref", "received_at", "customer_phone", "items_text",
+        "amount_fcfa", "delivery_zone", "status",
+    ],
+    "social_comments": [
+        "comment_id", "platform", "post_id", "published_at",
+        "author_handle", "comment_text", "like_count", "reply_to_id",
+    ],
+}
+
 
 def read_sheet(sheet_name: str) -> pd.DataFrame:
     """Read one Excel sheet without applying business transformations."""
-    return pd.read_excel(
-        SOURCE_FILE,
-        sheet_name=sheet_name
-    )
+    try:
+        return pd.read_excel(
+            SOURCE_FILE,
+            sheet_name=sheet_name
+        )
+    except ValueError as error:
+        raise ValueError(
+            f"Feuille '{sheet_name}' introuvable dans {SOURCE_FILE.name} "
+            f"(feuilles attendues : {list(SHEETS.values())})."
+        ) from error
 
 
 def main() -> None:
@@ -38,19 +69,43 @@ def main() -> None:
             f"Source file not found: {SOURCE_FILE}"
         )
 
+    # Passe 1 : lire ET valider les cinq feuilles avant d'écrire quoi que ce
+    # soit. Une erreur sur la 4e feuille ne doit pas laisser la base dans un
+    # état mixte (3 tables du nouveau mois, 2 de l'ancien).
+    frames = {}
+
+    for table_name, sheet_name in SHEETS.items():
+
+        print(f"\n[INFO] Reading sheet: {sheet_name}")
+
+        df = read_sheet(sheet_name)
+
+        # Une feuille vide n'est jamais ignorée : sinon la table RAW du mois
+        # précédent resterait en place et le rapport mélangerait des périodes.
+        if df.empty:
+            raise ValueError(
+                f"La feuille '{sheet_name}' est vide : ingestion interrompue "
+                "pour ne pas conserver silencieusement les données précédentes."
+            )
+
+        missing = [
+            col for col in REQUIRED_COLUMNS[table_name]
+            if col not in df.columns
+        ]
+        if missing:
+            raise ValueError(
+                f"Colonnes manquantes dans la feuille '{sheet_name}' : "
+                f"{missing}. Colonnes trouvées : {list(df.columns)}"
+            )
+
+        frames[table_name] = df
+
+    # Passe 2 : toutes les feuilles sont valides, on charge.
     con = duckdb.connect(str(DB_PATH))
 
     try:
 
-        for table_name, sheet_name in SHEETS.items():
-
-            print(f"\n[INFO] Loading sheet: {sheet_name}")
-
-            df = read_sheet(sheet_name)
-
-            if df.empty:
-                print(f"[WARNING] {sheet_name} is empty")
-                continue
+        for table_name, df in frames.items():
 
             # Enregistrement temporaire dans DuckDB
             con.register("tmp_df", df)

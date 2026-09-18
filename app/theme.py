@@ -30,6 +30,12 @@ MUTED = "#7A6A60"
 
 COLORWAY = [BISSAP, BOUYE, GINGEMBRE, LAGON, PRUNE, SABLE]
 
+PRODUCT_COLORS = {
+    "bissap": BISSAP,
+    "gingembre": GINGEMBRE,
+    "bouye": BOUYE,
+}
+
 SENTIMENT_COLORS = {
     "Positif": GINGEMBRE,
     "Neutre": SABLE,
@@ -215,6 +221,23 @@ _CSS = f"""
 [data-testid="stPlotlyChart"] .main-svg .bg {{
     fill: transparent !important;
 }}
+.subsection {{
+    display: flex;
+    align-items: baseline;
+    gap: .7rem;
+    margin: 2rem 0 .8rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid {BORDER};
+}}
+.subsection-title {{
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: {INK};
+}}
+.subsection-sub {{
+    font-size: .85rem;
+    color: {MUTED};
+}}
 .card-title {{
     font-size: .8rem;
     font-weight: 700;
@@ -367,6 +390,14 @@ def section(number: int, title: str, subtitle: str) -> None:
             </div>
         </div>
         """,
+        unsafe_allow_html=True,
+    )
+
+
+def subsection(title: str, subtitle: str = "") -> None:
+    sub = f'<span class="subsection-sub">{subtitle}</span>' if subtitle else ""
+    st.markdown(
+        f'<div class="subsection"><span class="subsection-title">{title}</span>{sub}</div>',
         unsafe_allow_html=True,
     )
 

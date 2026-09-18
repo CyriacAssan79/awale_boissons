@@ -160,9 +160,10 @@ models:
 
     columns:
       - name: comment_id
-        description: "Identifiant du commentaire"
+        description: "Identifiant du commentaire (unique après déduplication des doublons exacts)"
         tests:
           - not_null
+          - unique
 
       - name: platform
         description: "Plateforme normalisée"

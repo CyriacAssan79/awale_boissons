@@ -141,5 +141,75 @@ models:
       - name: quantity_total
         description: "Quantité totale extraite des lignes d'items."
 
+      - name: amount_missing
+        description: "TRUE si amount_fcfa est vide. Une commande sans montant n'est pas à zéro : son montant est inconnu."
+
+      - name: amount_outlier
+        description: >
+          TRUE si amount_fcfa dépasse var whatsapp_max_plausible_amount_fcfa
+          (montant invraisemblable pour 2 à 4 bouteilles). Le montant brut est
+          conservé dans amount_fcfa, jamais corrigé.
+
+      - name: amount_plausible_fcfa
+        description: "amount_fcfa hors montants aberrants ; NULL si manquant ou aberrant. Base des totaux."
+
       - name: order_parse_status
         description: "Statut synthétique du parsing de la commande."
+
+  - name: int_social_comments_enriched
+    description: >
+      Commentaires sociaux dédupliqués joints à leurs prédictions IA
+      (LEFT JOIN sur comment_id). Grain : 1 ligne = 1 commentaire. Un commentaire
+      sans prédiction ressort avec des NULL : le test
+      int_social_comments_predictions_complete le rend visible.
+    columns:
+      - name: comment_id
+        description: "Identifiant du commentaire."
+        tests:
+          - not_null
+          - unique
+      - name: sentiment_model
+        description: "Sentiment prédit : positive, negative ou neutral."
+      - name: theme_model
+        description: "Thème prédit."
+      - name: product_model
+        description: "Produit prédit ; 'unknown' = non identifiable, ce n'est pas un produit."
+      - name: is_spam_model
+        description: "Spam prédit (classification à améliorer : voir docs/ai_documentation)."
+
+  - name: int_pos_dimension
+    description: >
+      Dimension point de vente : 1 ligne = 1 magasin (pos_key = nom sans accents,
+      en minuscules). Regroupe les pos_id qui désignent le même magasin sous une
+      casse ou une orthographe différente. Aucune fusion approximative.
+    columns:
+      - name: pos_key
+        description: "Clé canonique du magasin."
+        tests:
+          - not_null
+          - unique
+      - name: canonical_pos_id
+        description: "Premier pos_id historique du magasin."
+      - name: pos_id_count
+        description: "Nombre de pos_id ayant désigné ce magasin."
+      - name: pos_id_changed
+        description: "TRUE si le magasin a changé d'identifiant."
+
+  - name: int_product_dimension
+    description: >
+      Dimension produit : 1 ligne = 1 SKU des ventes POS, traduit en produit,
+      format et volume en litres. Un SKU inconnu reste à NULL (jamais inventé) et
+      fait échouer le test int_product_dimension_mapped.
+    columns:
+      - name: product_sku
+        description: "SKU source (ex. BIS-1L)."
+        tests:
+          - not_null
+          - unique
+      - name: product
+        description: "bissap, gingembre ou bouye."
+      - name: format
+        description: "1L ou 33cl."
+      - name: volume_litres
+        description: "Volume d'une unité en litres (1,0 ou 0,33)."
+

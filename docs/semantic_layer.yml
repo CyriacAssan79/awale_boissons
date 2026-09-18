@@ -1,0 +1,257 @@
+# Couche sémantique Awalé Boissons
+#
+# Relie chaque terme métier à UN modèle dbt et UNE expression SQL. Sert de
+# dictionnaire commun : le dashboard, les notes client et toute question posée
+# aux données doivent utiliser ces définitions, pas en réécrire.
+#
+# Les définitions marquées `kpi_partie_a` sont recopiées MOT POUR MOT depuis
+# docs/business_problem.ipynb (section 5). Le test tests/test_semantic_layer.py
+# vérifie cette égalité et exécute chaque expression contre la base : une
+# définition qui dérive du code, ou du document, fait échouer le test.
+#
+# Lecture d'une entrée :
+#   modele        table dbt (mart_* ou int_*) sur laquelle l'expression est écrite
+#   expression    SQL exécuté tel quel : SELECT <expression> FROM <modele>
+#   dimensions    colonnes de <modele> par lesquelles on peut découper la mesure
+#   unite         FCFA, unités, litres, ratio (0 à 1) ou nombre
+#   attendu       (optionnel) bornes que la valeur doit respecter, contrôle de cohérence
+#   par_ligne     true si l'expression est une fenêtre : elle renvoie une valeur par ligne
+#   precautions   ce qu'il faut savoir avant d'interpréter le chiffre
+
+version: 1
+
+regles_generales:
+  spend_source: >
+    Dépense observée = export campagne (mart_marketing_channel_monthly). Le plan média
+    (prévu, facturé) reste à côté, jamais additionné. Règle détaillée dans
+    docs/business_problem.ipynb, section 6 bis.
+  causalite: >
+    Aucune mesure ne prouve qu'un canal a causé une vente : il n'existe pas de suivi
+    clic vers commande. Toute comparaison dépense / ventes est une association dans le temps.
+  valeurs_manquantes: >
+    Une valeur manquante reste manquante. Un jour sans données de ventes n'est pas un
+    jour à zéro vente ; un montant WhatsApp absent ou invraisemblable n'est pas zéro.
+  mois_incomplet: >
+    Un mois dont missing_sales_days est supérieur à 0 est incomplet : ses ventes ne se
+    comparent pas à celles d'un mois complet (voir evolution_ca et ca_par_jour_observe).
+  spam: >
+    Les mesures de sentiment et de thème excluent les commentaires détectés comme spam.
+
+metriques:
+
+  # ------------------------------------------------------------------ Partie A : KPI
+  spend_marketing:
+    libelle: Spend marketing
+    kpi_partie_a: Spend marketing
+    definition: Montant de dépenses marketing observé par canal et par période.
+    modele: mart_marketing_channel_monthly
+    expression: SUM(campaign_spend_fcfa)
+    dimensions: [month, channel]
+    unite: FCFA
+    precautions:
+      - Basé sur l'export campagne. Les lignes radio et influenceurs sont saisies à la main ; l'activation terrain n'y figure pas (0 FCFA alors que le plan indique un montant facturé).
+      - Les dépenses en EUR sont converties au taux fixe défini dans dbt/dbt_project.yml (eur_to_fcfa_rate).
+
+  part_budget_canal:
+    libelle: Part du budget par canal
+    kpi_partie_a: Part du budget par canal
+    definition: Part des dépenses marketing totales consacrée à chaque canal.
+    modele: mart_budget_allocation
+    expression: SUM(spend_share)
+    dimensions: [channel]
+    unite: ratio
+    attendu: {entre: [0.999, 1.001]}
+    precautions:
+      - La somme des parts vaut 1 ; la part d'un canal est la colonne spend_share.
+      - Sous-représente les canaux saisis à la main (radio, influenceurs, activation terrain).
+
+  ca_net:
+    libelle: Chiffre d'affaires net
+    kpi_partie_a: Chiffre d'Affaire (CA)
+    definition: Chiffre d'affaires après prise en compte des retours.
+    modele: mart_sales_monthly
+    expression: SUM(net_revenue_fcfa)
+    dimensions: [month]
+    unite: FCFA
+    precautions:
+      - CA net = ventes brutes moins retours (les retours sont négatifs dans la source).
+      - Ventes des points de vente uniquement ; les commandes WhatsApp n'y sont pas incluses.
+      - Un mois avec des jours manquants est incomplet.
+
+  evolution_ca:
+    libelle: Évolution du CA
+    kpi_partie_a: Evolution du CA
+    definition: Variation du CA net entre périodes comparables (avec les valeurs manquantes)
+    modele: mart_sales_monthly
+    expression: net_revenue_fcfa / NULLIF(LAG(net_revenue_fcfa) OVER (ORDER BY month), 0) - 1
+    par_ligne: true
+    dimensions: [month]
+    unite: ratio
+    precautions:
+      - Ne comparer que deux mois complets (missing_sales_days = 0 pour les deux). Pour un mois incomplet, utiliser ca_par_jour_observe.
+
+  unites_vendues:
+    libelle: Unités vendues
+    kpi_partie_a: Unités vendues
+    definition: Nombre d'unités vendues par produit, point de vente, commune et canal de vente.
+    modele: stg_pos_sales_daily
+    expression: SUM(units_sold)
+    dimensions: [sale_date, pos_key, commune, channel, product_sku]
+    unite: unités
+    precautions:
+      - Unités nettes des retours. Découpage par point de vente : utiliser pos_key (un magasin peut changer de pos_id).
+      - Par produit et par mois avec réconciliation : voir mix_produit (mart_product_mix_monthly).
+
+  mix_produit:
+    libelle: Mix produit
+    kpi_partie_a: Mix produit
+    definition: Répartition des ventes par produit et format.
+    modele: mart_product_mix_monthly
+    expression: SUM(net_revenue_fcfa)
+    dimensions: [month, product, format, product_sku]
+    unite: FCFA
+    precautions:
+      - Pour obtenir la répartition, diviser la valeur d'un produit par le total du même mois (colonne revenue_share_of_month).
+      - Ventes des points de vente ; la demande WhatsApp par produit est dans whatsapp_unites_commandees.
+
+  sentiment_client:
+    libelle: Sentiment client
+    kpi_partie_a: Sentiment client
+    definition: Répartition des commentaires analysés en positif, neutre et négatif.
+    modele: mart_social_monthly
+    expression: SUM(negative_comments_count) * 1.0 / NULLIF(SUM(non_spam_comments_count), 0)
+    dimensions: [month, platform]
+    unite: ratio
+    attendu: {entre: [0, 1]}
+    precautions:
+      - Cette expression donne la part de commentaires NÉGATIFS parmi les commentaires non-spam. Positifs et neutres : mêmes colonnes positive_comments_count et neutral_comments_count.
+      - Classification par un modèle local évalué sur 50 commentaires : lire les signaux (direction), pas les valeurs exactes. La détection de spam est à améliorer.
+
+  taux_reachat_livraison:
+    libelle: Taux de réachat livraison
+    kpi_partie_a: Taux de réachat livraison
+    definition: Part des clients WhatsApp ayant reçu au moins une commande livrée qui en ont reçu au moins deux.
+    modele: mart_whatsapp_customers
+    expression: COUNT(*) FILTER (WHERE is_repeat_customer) * 1.0 / NULLIF(COUNT(*) FILTER (WHERE has_delivered_order), 0)
+    dimensions: []
+    unite: ratio
+    attendu: {entre: [0, 1]}
+    precautions:
+      - Seules les commandes livrées comptent (une commande annulée ou en cours n'est pas un achat).
+      - Le client est un numéro de téléphone normalisé, pas une identité vérifiée.
+
+  # --------------------------------------------- mesures d'appui (couverture, qualité)
+  ca_brut:
+    libelle: Chiffre d'affaires brut
+    definition: Ventes avant retours.
+    modele: mart_sales_monthly
+    expression: SUM(gross_revenue_fcfa)
+    dimensions: [month]
+    unite: FCFA
+
+  taux_retours:
+    libelle: Taux de retours
+    definition: Valeur des retours rapportée au chiffre d'affaires brut.
+    modele: mart_sales_monthly
+    expression: ABS(SUM(return_revenue_fcfa)) / NULLIF(SUM(gross_revenue_fcfa), 0)
+    dimensions: [month]
+    unite: ratio
+    attendu: {entre: [0, 0.1]}
+
+  jours_ventes_manquants:
+    libelle: Jours de ventes manquants
+    definition: Nombre de jours calendaires sans aucune donnée de ventes.
+    modele: mart_sales_monthly
+    expression: SUM(missing_sales_days)
+    dimensions: [month]
+    unite: nombre
+    precautions:
+      - Un jour manquant n'est pas un jour à zéro vente.
+
+  couverture_ventes:
+    libelle: Couverture des données de ventes
+    definition: Part des jours calendaires pour lesquels des ventes ont été reçues.
+    modele: mart_sales_monthly
+    expression: SUM(observed_sales_days) * 1.0 / NULLIF(SUM(calendar_days), 0)
+    dimensions: [month]
+    unite: ratio
+    attendu: {entre: [0, 1]}
+
+  ca_par_jour_observe:
+    libelle: CA net par jour observé
+    definition: Chiffre d'affaires net divisé par le nombre de jours pour lesquels des ventes existent.
+    modele: mart_monthly_performance
+    expression: SUM(net_revenue_fcfa) / NULLIF(SUM(observed_sales_days), 0)
+    dimensions: [month]
+    unite: FCFA
+    precautions:
+      - Seule façon honnête de comparer un mois incomplet à un mois complet ; reste une observation, pas une preuve.
+
+  ecart_depense_plan:
+    libelle: Dépense observée rapportée au plan média
+    definition: Dépense de l'export campagne divisée par le budget planifié.
+    modele: mart_budget_allocation
+    expression: SUM(campaign_spend_fcfa) / NULLIF(SUM(planned_budget_fcfa), 0)
+    dimensions: [channel]
+    unite: ratio
+
+  ecart_depense_facture:
+    libelle: Écart export campagne moins facturé
+    definition: Dépense de l'export campagne moins le montant facturé (plan média). Positif si l'export dépasse le facturé.
+    modele: mart_budget_allocation
+    expression: SUM(campaign_vs_invoiced_fcfa)
+    dimensions: [channel]
+    unite: FCFA
+    precautions:
+      - Écart non réconcilié, affiché et non absorbé. Les montants facturés manquants ne sont pas comptés à zéro.
+
+  whatsapp_commandes_livrees:
+    libelle: Commandes WhatsApp livrées
+    definition: Nombre de commandes WhatsApp au statut livré.
+    modele: mart_whatsapp_monthly
+    expression: SUM(delivered_orders)
+    dimensions: [month]
+    unite: nombre
+
+  whatsapp_unites_commandees:
+    libelle: Unités commandées sur WhatsApp
+    definition: Quantités lues dans le texte libre des commandes.
+    modele: mart_whatsapp_monthly
+    expression: SUM(total_units)
+    dimensions: [month]
+    unite: unités
+    precautions:
+      - Lecture automatique du texte : le format est parfois absent. Les quantités "Nx SKU" sont comptées N fois.
+
+  whatsapp_montants_exploitables:
+    libelle: Part des commandes livrées avec un montant exploitable
+    definition: Commandes livrées dont le montant est renseigné et plausible, rapportées à toutes les commandes livrées.
+    modele: mart_whatsapp_monthly
+    expression: 1.0 - (SUM(delivered_amount_missing_orders) + SUM(delivered_outlier_amount_orders)) * 1.0 / NULLIF(SUM(delivered_orders), 0)
+    dimensions: [month]
+    unite: ratio
+    attendu: {entre: [0, 1]}
+    precautions:
+      - Tant que cette part est nettement inférieure à 1, aucun revenu livraison ne doit être affiché ni extrapolé.
+
+  budget_test_propose:
+    libelle: Budget de test proposé
+    definition: Somme des budgets proposés par canal pour le prochain cycle.
+    modele: mart_budget_recommendation_15m
+    expression: SUM(proposed_budget_fcfa)
+    dimensions: [channel]
+    unite: FCFA
+    precautions:
+      - Budget de test pondéré par la dépense observée et la qualité de mesure, pas un ROI. Total égal au paramètre total_test_budget_fcfa.
+
+# KPI que le jeu de données ne peut PAS soutenir honnêtement, et ce qu'il faudrait.
+non_soutenus:
+  attribution_causale_par_canal:
+    pourquoi: "Aucun suivi clic vers commande : impossible d'affirmer qu'un canal a causé une vente."
+    il_faudrait: "Codes promo, numéros ou liens dédiés par canal, saisis dans le journal des commandes WhatsApp."
+  cout_par_litre_vendu_par_canal:
+    pourquoi: "Sans attribution, on ne peut pas rattacher des litres vendus à un canal ; la dépense est mensuelle, les ventes ne sont pas rattachées."
+    il_faudrait: "L'attribution ci-dessus, ou une expérience géographique ou temporelle contrôlée."
+  chiffre_d_affaires_livraison:
+    pourquoi: "Environ 15 % des commandes livrées du jeu de démarrage (96 sur 624) n'ont pas de montant exploitable (absent ou invraisemblable)."
+    il_faudrait: "Confirmer l'unité des montants WhatsApp et compléter les montants manquants à la saisie."

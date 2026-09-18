@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -43,67 +46,21 @@ PRODUCTS = {
 }
 
 
-SYSTEM_PROMPT = """
-Tu es un classifieur de commentaires clients Awalé Boissons.
+# Le prompt vit dans un fichier versionné (ai/prompts/), pas dans le code : on
+# le relit, on le compare et on le fait évoluer sans toucher au script. Toute
+# modification du prompt doit passer par un nouveau fichier (v3, ...) et par un
+# nouveau passage du benchmark humain (voir docs/ai_documentation.ipynb).
+PROMPT_FILE = (
+    Path(__file__).resolve().parent / "prompts" / "comment_classifier_v2_hybrid.txt"
+)
+SYSTEM_PROMPT = PROMPT_FILE.read_text(encoding="utf-8")
+PROMPT_VERSION = PROMPT_FILE.stem
+PROMPT_SHA256 = hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:12]
 
-Retourne UNIQUEMENT un JSON valide :
-
-{
-  "language": "fr",
-  "sentiment": "positive",
-  "theme": "taste",
-  "product": "none",
-  "is_spam": false
-}
-
-Valeurs autorisées :
-
-language:
-fr | nouchi | en | mixed | other
-
-sentiment:
-positive | negative | neutral
-
-theme:
-taste | price | availability | delivery | packaging | health |
-service | promotion | product_question | other
-
-product:
-bissap | gingembre | bouye | multiple | none | unknown
-
-is_spam:
-true | false
-
-Règles importantes :
-
-- Ne jamais inventer une catégorie.
-- Ne jamais inventer un produit.
-- product = bissap uniquement si bissap ou hibiscus est explicitement mentionné.
-- product = gingembre uniquement si gingembre est explicitement mentionné.
-- product = bouye uniquement si bouye est explicitement mentionné.
-- Plusieurs produits explicitement cités → multiple.
-- Aucun produit identifiable → none.
-- Information insuffisante → unknown.
-
-Pour le sentiment :
-- avis favorable → positive
-- plainte ou avis défavorable → negative
-- question ou information sans polarité claire → neutral
-
-Pour le thème :
-- goût, frais, sucré, délicieux → taste
-- prix, cher → price
-- stock, rupture, plus rien, en rayon → availability
-- livraison, commande livrée → delivery
-- bouteille, étiquette, emballage, fuite, format → packaging
-- sucre ajouté, conservateurs, santé, ingrédients → health
-- service client → service
-- publicité, pub, radio, TikTok, influence, stand → promotion
-- question concernant un produit → product_question
-- sinon → other
-
-Ne renvoie aucun texte en dehors du JSON.
-"""
+# Sauvegarde intermédiaire : toutes les N batches (4 commentaires par batch,
+# soit ~2 minutes de calcul pour 5 batches). Un plantage ou un Ctrl+C ne fait
+# perdre que le travail depuis la dernière sauvegarde, jamais tout le run.
+CHECKPOINT_EVERY_BATCHES = 5
 
 
 # ---------------------------------------------------------------------
@@ -378,27 +335,34 @@ def extract_json(text: str) -> dict:
 
 
 def validate_model_prediction(pred: dict) -> dict:
-    language = str(pred.get("language", "other")).strip().lower()
-    sentiment = str(pred.get("sentiment", "neutral")).strip().lower()
-    theme = str(pred.get("theme", "other")).strip().lower()
-    product = str(pred.get("product", "unknown")).strip().lower()
+    """Ramène la réponse du modèle à un vocabulaire fermé.
+
+    Garde-fou : le modèle ne peut produire que des catégories connues, jamais un
+    nombre ni un libellé libre. Une réponse absente ou hors vocabulaire est
+    remplacée par une valeur par défaut, MAIS le champ concerné est listé dans
+    "coerced" et le script en affiche le total : un remplacement n'est jamais
+    silencieux.
+    """
+    coerced = []
+
+    def pick(field: str, allowed: set, default: str) -> str:
+        value = str(pred.get(field, default)).strip().lower()
+
+        if field not in pred or value not in allowed:
+            coerced.append(field)
+            return default
+
+        return value
+
+    language = pick("language", LANGUAGES, "other")
+    sentiment = pick("sentiment", SENTIMENTS, "neutral")
+    theme = pick("theme", THEMES, "other")
+    product = pick("product", PRODUCTS, "unknown")
 
     spam = pred.get("is_spam", False)
 
     if isinstance(spam, str):
         spam = spam.strip().lower() in {"true", "1", "yes"}
-
-    if language not in LANGUAGES:
-        language = "other"
-
-    if sentiment not in SENTIMENTS:
-        sentiment = "neutral"
-
-    if theme not in THEMES:
-        theme = "other"
-
-    if product not in PRODUCTS:
-        product = "unknown"
 
     return {
         "language": language,
@@ -406,6 +370,7 @@ def validate_model_prediction(pred: dict) -> dict:
         "theme": theme,
         "product": product,
         "is_spam": bool(spam),
+        "coerced": coerced,
     }
 
 
@@ -549,6 +514,58 @@ OUTPUT_COLUMNS = [
 ]
 
 
+def classify_with_fallback(texts, tokenizer, model):
+    """Classe un lot ; si la sortie du modèle est illisible, retente chaque texte seul.
+
+    Un seul JSON invalide ne doit pas faire échouer le lot entier (et donc le run).
+    Retourne deux listes alignées sur `texts` : les prédictions (None en cas
+    d'échec) et le message d'erreur correspondant.
+    """
+    try:
+        predictions = list(model_classification_batch(texts, tokenizer, model))
+        return predictions, [None] * len(texts)
+    except (ValueError, KeyError, TypeError):
+        # json.JSONDecodeError est une ValueError : on retombe ici pour tout
+        # JSON introuvable ou invalide.
+        pass
+
+    predictions, errors = [], []
+
+    for text in texts:
+        try:
+            predictions.append(model_classification_batch([text], tokenizer, model)[0])
+            errors.append(None)
+        except (ValueError, KeyError, TypeError) as error:
+            predictions.append(None)
+            errors.append(str(error)[:200])
+
+    return predictions, errors
+
+
+def write_predictions(existing: pd.DataFrame, new_predictions: pd.DataFrame) -> pd.DataFrame:
+    """Fusionne l'existant et les nouvelles prédictions, puis écrit OUTPUT_FILE.
+
+    L'écriture est atomique (fichier temporaire puis remplacement) : une
+    interruption pendant l'écriture ne peut pas laisser un fichier tronqué. Comme
+    le script ne classe que les comment_id absents de OUTPUT_FILE, relancer après
+    une interruption reprend exactement où le run s'est arrêté.
+    """
+    output = (
+        pd.concat([existing, new_predictions], ignore_index=True)
+        .drop_duplicates(subset="comment_id", keep="last")
+        .sort_values("comment_id")
+        .reset_index(drop=True)
+    )
+
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    tmp_file = OUTPUT_FILE.with_suffix(OUTPUT_FILE.suffix + ".tmp")
+    output.to_csv(tmp_file, index=False)
+    os.replace(tmp_file, OUTPUT_FILE)
+
+    return output
+
+
 def load_existing_predictions() -> pd.DataFrame:
     """Prédictions déjà produites lors d'un run précédent, s'il y en a.
 
@@ -579,140 +596,159 @@ def main():
         print(f"Output : {OUTPUT_FILE}")
         return
 
+    print(f"Prompt : {PROMPT_FILE.name} (sha256 {PROMPT_SHA256})")
+
     tokenizer, model = load_model()
 
     BATCH_SIZE = 4
 
     results = []
+    failed = []
+    coerced_log = []
 
-    for start_idx in range(0, len(df), BATCH_SIZE):
+    total_batches = (len(df) + BATCH_SIZE - 1) // BATCH_SIZE
 
-        batch = df.iloc[start_idx:start_idx + BATCH_SIZE]
+    try:
 
-        texts = [
-            str(text)
-            for text in batch["comment_text"]
-        ]
+        for batch_number, start_idx in enumerate(range(0, len(df), BATCH_SIZE), start=1):
 
-        batch_start = time.perf_counter()
+            batch = df.iloc[start_idx:start_idx + BATCH_SIZE]
 
-        rules_batch = [
-            deterministic_classification(text)
-            for text in texts
-        ]
-
-        model_indices = [
-            i
-            for i, rules in enumerate(rules_batch)
-            if not is_complete(rules)
-        ]
-
-        model_predictions = {}
-
-        if model_indices:
-
-            texts_for_model = [
-                texts[i]
-                for i in model_indices
+            texts = [
+                str(text)
+                for text in batch["comment_text"]
             ]
 
-            predictions = model_classification_batch(
-                texts_for_model,
-                tokenizer,
-                model,
+            batch_start = time.perf_counter()
+
+            rules_batch = [
+                deterministic_classification(text)
+                for text in texts
+            ]
+
+            model_indices = [
+                i
+                for i, rules in enumerate(rules_batch)
+                if not is_complete(rules)
+            ]
+
+            model_predictions = {}
+            model_errors = {}
+
+            if model_indices:
+
+                texts_for_model = [
+                    texts[i]
+                    for i in model_indices
+                ]
+
+                predictions, errors = classify_with_fallback(
+                    texts_for_model,
+                    tokenizer,
+                    model,
+                )
+
+                for local_idx, prediction, error in zip(
+                    model_indices,
+                    predictions,
+                    errors,
+                ):
+                    if prediction is None:
+                        model_errors[local_idx] = error
+                    else:
+                        model_predictions[local_idx] = prediction
+
+            for i, (_, row) in enumerate(batch.iterrows()):
+
+                rules = rules_batch[i]
+
+                if i in model_errors:
+                    # Le modèle n'a pas produit de sortie exploitable : on ne
+                    # devine rien et on n'enregistre rien. Le commentaire n'est
+                    # pas dans OUTPUT_FILE, il sera donc retenté au prochain run.
+                    failed.append((row["comment_id"], model_errors[i]))
+                    continue
+
+                if i in model_predictions:
+
+                    model_prediction = model_predictions[i]
+
+                    if model_prediction.get("coerced"):
+                        coerced_log.append(
+                            (row["comment_id"], model_prediction["coerced"])
+                        )
+
+                    prediction = {
+                        "language": (
+                            rules["language"]
+                            if rules["language"] is not None
+                            else model_prediction["language"]
+                        ),
+                        "sentiment": (
+                            rules["sentiment"]
+                            if rules["sentiment"] is not None
+                            else model_prediction["sentiment"]
+                        ),
+                        "theme": (
+                            rules["theme"]
+                            if rules["theme"] is not None
+                            else model_prediction["theme"]
+                        ),
+                        "product": (
+                            rules["product"]
+                            if rules["product"] is not None
+                            else model_prediction["product"]
+                        ),
+                        "is_spam": (
+                            rules["is_spam"]
+                            if rules["is_spam"] is not None
+                            else model_prediction["is_spam"]
+                        ),
+                    }
+
+                    model_used = True
+
+                else:
+
+                    prediction = rules
+                    model_used = False
+
+                results.append({
+                    "comment_id": row["comment_id"],
+                    "comment_text": row["comment_text"],
+                    "language_model": prediction["language"],
+                    "sentiment_model": prediction["sentiment"],
+                    "theme_model": prediction["theme"],
+                    "product_model": prediction["product"],
+                    "is_spam_model": prediction["is_spam"],
+                    "model_used": model_used,
+                    "rules_complete": is_complete(rules),
+                })
+
+            elapsed = time.perf_counter() - batch_start
+
+            print(
+                f"[{start_idx + 1}/{len(df)}] "
+                f"batch={len(batch)} | "
+                f"model={len(model_indices)} | "
+                f"{elapsed:.2f}s"
             )
 
-            for local_idx, prediction in zip(
-                model_indices,
-                predictions,
-            ):
-                model_predictions[local_idx] = prediction
+            if batch_number % CHECKPOINT_EVERY_BATCHES == 0 and batch_number < total_batches:
+                write_predictions(
+                    existing,
+                    pd.DataFrame(results, columns=OUTPUT_COLUMNS),
+                )
+                print(
+                    f"    sauvegarde intermédiaire : {len(existing) + len(results)} "
+                    f"commentaires enregistrés dans {OUTPUT_FILE.name}"
+                )
 
-        for i, (_, row) in enumerate(batch.iterrows()):
-
-            rules = rules_batch[i]
-
-            if i in model_predictions:
-
-                model_prediction = model_predictions[i]
-
-                prediction = {
-                    "language": (
-                        rules["language"]
-                        if rules["language"] is not None
-                        else model_prediction["language"]
-                    ),
-                    "sentiment": (
-                        rules["sentiment"]
-                        if rules["sentiment"] is not None
-                        else model_prediction["sentiment"]
-                    ),
-                    "theme": (
-                        rules["theme"]
-                        if rules["theme"] is not None
-                        else model_prediction["theme"]
-                    ),
-                    "product": (
-                        rules["product"]
-                        if rules["product"] is not None
-                        else model_prediction["product"]
-                    ),
-                    "is_spam": (
-                        rules["is_spam"]
-                        if rules["is_spam"] is not None
-                        else model_prediction["is_spam"]
-                    ),
-                }
-
-                model_used = True
-
-            else:
-
-                prediction = rules
-                model_used = False
-
-            results.append({
-                "comment_id": row["comment_id"],
-                "comment_text": row["comment_text"],
-                "language_model": prediction["language"],
-                "sentiment_model": prediction["sentiment"],
-                "theme_model": prediction["theme"],
-                "product_model": prediction["product"],
-                "is_spam_model": prediction["is_spam"],
-                "model_used": model_used,
-                "rules_complete": is_complete(rules),
-            })
-
-        elapsed = time.perf_counter() - batch_start
-
-        print(
-            f"[{start_idx + 1}/{len(df)}] "
-            f"batch={len(batch)} | "
-            f"model={len(model_indices)} | "
-            f"{elapsed:.2f}s"
-        )
-
-    new_predictions = pd.DataFrame(results)
-
-    # Fusion avec l'existant : traitement incrémental, jamais un écrasement.
-    # keep="last" au cas où un comment_id serait reclassé volontairement
-    # (OUTPUT_FILE supprimé puis un sous-ensemble relancé).
-    output = (
-        pd.concat([existing, new_predictions], ignore_index=True)
-        .drop_duplicates(subset="comment_id", keep="last")
-        .sort_values("comment_id")
-        .reset_index(drop=True)
-    )
-
-    OUTPUT_FILE.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    output.to_csv(
-        OUTPUT_FILE,
-        index=False,
-    )
+    finally:
+        # Sauvegarde finale, y compris après une erreur ou un Ctrl+C : ce qui a
+        # déjà été classé n'est jamais perdu.
+        new_predictions = pd.DataFrame(results, columns=OUTPUT_COLUMNS)
+        output = write_predictions(existing, new_predictions)
 
     print("\n" + "=" * 70)
     print("RÉSULTAT V2 HYBRIDE — INCRÉMENTAL")
@@ -729,6 +765,26 @@ def main():
     )
     print(f"Total accumulé (fichier) : {len(output)}")
     print(f"Output                   : {OUTPUT_FILE}")
+
+    if coerced_log:
+        fields = sorted({f for _, fs in coerced_log for f in fs})
+        print(
+            f"\n[ATTENTION] {len(coerced_log)} commentaire(s) dont la réponse du modèle "
+            f"était absente ou hors vocabulaire (champs : {', '.join(fields)}) ont reçu "
+            "la valeur par défaut. À surveiller : une hausse signale un modèle ou un "
+            "prompt qui dérive."
+        )
+
+    if failed:
+        print(f"\n[ERREUR] {len(failed)} commentaire(s) sans sortie exploitable du modèle :")
+        for comment_id, error in failed[:20]:
+            print(f"  - {comment_id} : {error}")
+        print(
+            "Ils ne sont PAS enregistrés et seront retentés au prochain lancement. "
+            "Le rapport ne doit pas être livré tant qu'ils manquent."
+        )
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

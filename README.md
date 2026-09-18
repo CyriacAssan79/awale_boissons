@@ -30,7 +30,7 @@ RAW → STAGING → INTERMEDIATE → MARTS → DECISION → DASHBOARD
 
 ## 4. Stack technique
 
-Python 3.11 · pandas · DuckDB · dbt Core + dbt-duckdb · openpyxl · modèle local + règles hybrides · Streamlit · Plotly · dbt tests.
+Python 3.13 ou 3.14 (versions épinglées dans `requirements.txt`) · pandas · DuckDB · dbt Core + dbt-duckdb · openpyxl · modèle local + règles hybrides · Streamlit · Plotly · dbt tests.
 
 ## 5. Sources
 
@@ -51,6 +51,9 @@ Les valeurs manquantes ne sont jamais converties automatiquement en zéro. Les c
 - Réconciliation marketing
 - Montants WhatsApp manquants, `order_ref` répétés, parsing, produits inconnus
 - Unicité des `comment_id`
+- Identifiants de points de vente instables (4 magasins changent de `pos_id` le 1er mai), montants WhatsApp invraisemblables, quantités « Nx SKU », mois de ventes partiels
+
+Le détail de chaque décision (constat, règle, conséquence sur les chiffres, point à confirmer) est dans `docs/data_quality.ipynb`.
 
 > **Règle :** ne jamais déduire un catalogue de prix à partir de `amount_fcfa` / `quantity`.
 
@@ -69,11 +72,13 @@ Les commentaires sont enrichis avec `language`, `sentiment`, `theme`, `product` 
 | Spam            | 94% | 88%       |
 | Exact agreement | 8%  | 14%       |
 
+**À lire avec les taux de référence.** Sur ces 50 commentaires, une réponse constante donnerait 72 % en langue, 54 % en sentiment, 22 % en thème, 42 % en produit et 94 % en spam. V1 n'égale que ces taux sur langue, sentiment et spam ; la version hybride progresse sur sentiment, thème et produit mais reste très en dessous en langue (22 % contre 72 %). L'échantillon ne compte que 3 spams. Le champ langue n'est pas utilisable en l'état et la détection de spam est à améliorer : le remplacement du modèle local est prévu (voir `docs/ai_documentation.ipynb` §5).
+
 ## 8. Customer Voice — janvier à juin 2026
 
-**2 831 commentaires** : 1 186 positifs, 735 négatifs, 513 spam.
+**2 831 commentaires**, dont 513 détectés comme spam. **Hors spam (2 318)** : 1 186 positifs, 735 négatifs, 397 neutres.
 
-Principaux thèmes :
+Principaux thèmes (hors spam) :
 
 | Thème        | Volume |
 | ------------ | ------ |
@@ -121,6 +126,22 @@ CA net = CA brut diminué des retours (`net_revenue_fcfa` dans `mart_sales_month
 
 Avril comporte 14 jours sans données, du 13 au 26 avril, et ne doit donc pas être interprété comme un mois complet.
 
+## 10 bis. WhatsApp — livraison
+
+| Indicateur | Valeur |
+| --- | --- |
+| Commandes | 1 066 (624 livrées, 296 annulées, 146 en cours) |
+| Clients identifiés (téléphone normalisé) | 389, dont 313 avec au moins une commande livrée |
+| Taux de réachat livraison | **57,5 %** (180 clients sur 313, commandes livrées) |
+| Unités commandées (texte parsé) | 4 399 |
+| Montants manquants | 131 commandes (dont 82 livrées) |
+| Montants invraisemblables, exclus | 23 commandes (au-dessus de 100 000 FCFA) |
+| Montant connu et plausible, commandes livrées | 3 135 400 FCFA |
+
+Le montant des commandes livrées **n'est pas un revenu livraison** : 96 des 624 commandes livrées (15,4 %) n'ont pas de montant exploitable (82 sans montant, 14 avec un montant invraisemblable), et aucun total n'est extrapolé.
+
+Le taux de réachat ne compte que les commandes livrées : une commande annulée ou en cours n'est pas un achat (l'ancienne définition, tous statuts confondus, donnait 74,3 %). Les montants invraisemblables (de 1,4 M à 11,55 M FCFA, soit ×111 le plus grand montant plausible) ressemblent à une erreur d'unité ×1 000, hypothèse non appliquée et à confirmer avec Kômian.
+
 ## 11. Allocation proposée — 15 M FCFA
 
 | Canal              | Budget          | Part      |
@@ -137,7 +158,9 @@ Calcul (`dbt/models/marts/mart_budget_recommendation_15m.sql`) : un socle de 1 M
 finance l'instrumentation même des canaux les moins mesurés, puis le reliquat (9 M FCFA) est réparti
 au prorata de `part de dépense observée × bonus de qualité d'evidence` (evidence_quality vient de la
 complétude des données, pas de la performance commerciale). Cette allocation se recalcule donc si
-les données du mois prochain changent — ce n'est ni un classement causal, ni un montant figé.
+les données du mois prochain changent — ce n'est ni un classement causal, ni un montant figé. Le budget total et le socle par canal sont des paramètres (`total_test_budget_fcfa`, `test_budget_floor_per_channel_fcfa` dans `dbt/dbt_project.yml`).
+
+**Limite de la base de calcul.** La répartition suit la dépense observée dans l'export campagne, qui sous-représente les canaux saisis à la main : la radio pèse 12,6 % de l'export contre 26,2 % du facturé (plan média), les influenceurs 5,7 % contre 8,3 %, l'activation terrain 0 % contre 13,8 %. L'allocation hérite de ce biais. Le choix de la base (dépense observée ou facturé) est à trancher avec Kômian : voir `docs/business_problem.ipynb` §6 bis.
 
 ## 12. Conditions de test
 
@@ -152,6 +175,11 @@ les données du mois prochain changent — ce n'est ni un classement causal, ni 
 - Une association entre dépenses d'un canal et ventes observées ne démontre pas une relation de cause à effet.
 - Ne pas utiliser `mart_channel_performance_monthly` pour attribuer le CA aux canaux : le CA mensuel total y est répété par canal.
 - CPC, CPM, impressions et clics ne constituent pas à eux seuls une preuve d'efficacité commerciale.
+- Le mix produit (`mart_product_mix_monthly`) couvre les points de vente ; la demande WhatsApp par produit est lue dans le texte des commandes, avec des formats parfois absents.
+- Les 96 lignes POS identiques (toutes sur l'entrepôt `POS999`) sont conservées : si l'export contenait de vrais doublons, le CA net serait surévalué de 0,50 % (440 600 FCFA). À confirmer auprès du distributeur.
+- Deux cas de points de vente ne sont pas fusionnés sans validation (`Avenue 16` / `Avenue 16 (nouveau)`, probablement un même magasin : 40 magasins au lieu de 41).
+- Le "CA net observé" du dashboard est le CA des points de vente uniquement ; les commandes WhatsApp n'y sont pas incluses.
+- Avec les versions de `requirements.txt` sur CPU, le vrai modèle a reproduit à l'identique les prédictions déjà enregistrées sur deux échantillons (12 et 24 commentaires), pas sur les 2 831 : un autre matériel ou d'autres versions peuvent produire des sorties légèrement différentes pour un même commentaire.
 
 ## 14. Reproductibilité
 
@@ -174,8 +202,19 @@ avec un `FileNotFoundError` explicite plutôt que d'échouer plus loin de façon
 ```bash
 python -m venv .venv
 # Windows : .venv\Scripts\activate | macOS/Linux : source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt        # cycle mensuel (pipeline, dashboard, IA locale)
+pip install -r requirements-dev.txt    # en plus : tests, benchmark IA, notebooks
 ```
+
+Toutes les versions sont **épinglées** (`==`) : ce sont celles installées et testées ensemble
+(Python 3.13, environnement neuf créé depuis ces fichiers : `run_pipeline.py --skip-ai`, `dbt run`,
+`dbt test`, dashboard, `pytest`, et modèle IA réel sur 24 commentaires). Pour en changer une, la modifier dans `requirements.txt`
+puis rejouer `python run_pipeline.py --skip-ai` et `pytest`. Le pipeline mensuel n'a besoin
+d'aucune clé API : `openai`, `tenacity` et `python-dotenv` ne servent qu'à la première version de
+la classification (`ai/classify_comments.py`, non retenue) et sont dans `requirements-dev.txt`.
+
+Première inférence IA : le modèle `Qwen/Qwen2.5-0.5B-Instruct` (~1 Go) est téléchargé une fois
+depuis Hugging Face, puis relu depuis le cache local.
 
 ### 14.3 Run complet
 
@@ -191,16 +230,53 @@ export du texte des commentaires → inférence IA → rechargement des prédict
 `dbt run` complet → `dbt test`. Options : `--skip-ai` (réutilise les prédictions déjà présentes),
 `--skip-tests`.
 
-**Validation actuelle :** 22/22 modèles dbt et 74/74 tests dbt, avec 0 erreur et 0 warning.
+**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning ; `pytest` : 56/56 tests (voir §14.5).
+
+Le chargement (`ingestion/load_raw.py`) valide les cinq feuilles et leurs colonnes **avant** d'écrire : une feuille absente, vide ou incomplète interrompt le run avec un message clair, sans modifier la base.
+
+### 14.4 Reprise après interruption de l'IA
+
+`ai/classify_comments_hybrid.py` sauvegarde ses prédictions toutes les 5 batches (~2 minutes de calcul), de
+façon atomique. Un plantage ou un Ctrl+C ne fait perdre que le travail depuis la dernière sauvegarde :
+relancer `python run_pipeline.py` reprend exactement où le run s'est arrêté, car seuls les `comment_id`
+absents du fichier de prédictions sont classés. Un commentaire dont la sortie du modèle est illisible est
+retenté seul, puis signalé ; il n'est **pas** enregistré (rien n'est deviné), le script se termine en erreur
+et il sera retenté au lancement suivant. Les réponses hors vocabulaire ramenées à une valeur par défaut sont
+comptées et affichées (`[ATTENTION]`).
+
+Le prompt est un fichier versionné, `ai/prompts/comment_classifier_v2_hybrid.txt`. Le modifier passe par un
+nouveau fichier (v3, …) et un nouveau passage du benchmark humain.
+
+### 14.5 Tests automatiques
+
+```bash
+pytest
+```
+
+Quatre familles : reprise, garde-fou et prompt de l'IA (modèle simulé, sans téléchargement) ;
+validation du chargement Excel (feuille absente, vide ou incomplète) ; couche sémantique (chaque
+expression de `docs/semantic_layer.yml` est exécutée contre la base et ses définitions sont comparées
+mot pour mot à celles de `docs/business_problem.ipynb`). Les tests qui lisent la base sont **ignorés,
+non validés**, si `data/awale.duckdb` est absente ou verrouillée (fermer l'aperçu DuckDB de l'éditeur).
+
+### 14.6 Ajouter un nouveau mois
+
+Ajouter les lignes du mois aux feuilles du même fichier Excel, puis relancer `python run_pipeline.py`. Les mois du plan média, les mois de campagne et le calendrier des ventes sont lus dans les données : aucune date n'est écrite en dur. Un mois de ventes reçu incomplet apparaît avec ses jours manquants (et l'avertissement du dashboard) au lieu de passer pour un mois complet.
+
+Les paramètres métier se modifient dans `dbt/dbt_project.yml`, section `vars` : taux EUR→FCFA (`eur_to_fcfa_rate`), budget de test et socle par canal, seuil de montant WhatsApp invraisemblable (`whatsapp_max_plausible_amount_fcfa`).
 
 ## 15. Structure du repository
 
 ```
 awale_boissons/
+├── .streamlit/
+│   └── config.toml   (thème du dashboard)
 ├── app/
-│   └── app.py
+│   ├── app.py
+│   └── theme.py      (palette, CSS, graphiques)
 ├── ai/
 │   ├── classify_comments_hybrid.py
+│   ├── prompts/      (prompts versionnés)
 │   └── evaluation/
 ├── analysis/
 │   ├── export_ai_input.py
@@ -214,12 +290,18 @@ awale_boissons/
 │   ├── models/marts/
 │   ├── tests/
 │   └── dbt_project.yml
-├── docs/
+├── docs/             (business_problem, data_quality, ai_documentation,
+│                      Dictionnaire_de_donnees, Client_Note, Runbook_Mensuel,
+│                      Note_Adoption, semantic_layer.yml)
 ├── ingestion/
 │   ├── load_raw.py
 │   └── load_predictions.py
+├── pytest.ini
 ├── requirements.txt
+├── requirements-dev.txt
 ├── run_pipeline.py
+├── tests/            (pytest : IA, chargement, couche sémantique)
+├── version.ipynb
 └── README.md
 ```
 
@@ -252,7 +334,7 @@ cycle mensuel vient de l'IA (~45 min) et de la revue humaine (25 min, non compre
 restante pour repasser sous l'heure : réduire `max_new_tokens` ou augmenter `BATCH_SIZE` côté
 modèle — non implémenté.
 
-Le détail figure dans `Awale_Boissons_Runbook_Mensuel.pdf`.
+Le détail figure dans `docs/Runbook_Mensuel.ipynb`.
 
 ## 17. Principe de décision
 
@@ -271,5 +353,8 @@ Faits observés → qualité des données → observations → signaux → limit
 - Benchmark
 - Dashboard Streamlit
 - Allocation 15 M FCFA
-- Client Note
+- Client Note (recommandation, niveau de confiance, mesures à 90 jours)
 - Runbook mensuel
+- Note d'adoption interne (`docs/Note_Adoption.ipynb`)
+- Couche sémantique (`docs/semantic_layer.yml`) et tests automatiques (`tests/`)
+- Prompt de classification versionné (`ai/prompts/`)

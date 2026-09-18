@@ -145,8 +145,17 @@ parsed AS (
             - 6x BIS-1L
             - 6 x BIS-1L
             - 6 bouye
+            - commande habituelle x3
         */
         CASE
+            /* multiplicateur en tête : "6x bis-1l", "6 x bis-1l" */
+            WHEN REGEXP_MATCHES(segment, '^\s*[0-9]+\s*x\s*[a-z]')
+                THEN TRY_CAST(
+                    REGEXP_EXTRACT(segment, '^\s*([0-9]+)\s*x', 1)
+                    AS INTEGER
+                )
+
+            /* multiplicateur en fin : "commande habituelle x3" */
             WHEN REGEXP_MATCHES(segment, 'x[0-9]+$')
                 THEN TRY_CAST(
                     REGEXP_EXTRACT(segment, 'x([0-9]+)$', 1)

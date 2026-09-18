@@ -7,6 +7,8 @@ WITH orders AS (
         received_at,
         amount_fcfa,
         amount_missing,
+        amount_outlier,
+        amount_plausible_fcfa,
         status,
         item_line_count,
         parsed_item_lines,
@@ -93,11 +95,33 @@ SELECT
     SUM(COALESCE(i.format_1l_units, 0)) AS format_1l_units,
     SUM(COALESCE(i.format_33cl_units, 0)) AS format_33cl_units,
 
+    -- Montants renseignés et plausibles, tous statuts confondus.
+    -- Les montants invraisemblables sont exclus (voir outlier_* ci-dessous).
+    SUM(COALESCE(amount_plausible_fcfa, 0)) AS known_order_amount_fcfa,
+
+    -- Base "revenu livraison" : commandes livrées, montant renseigné et
+    -- plausible. À lire avec delivered_amount_missing_orders et
+    -- delivered_outlier_amount_orders : ces commandes ne sont PAS à zéro,
+    -- leur montant est simplement inconnu ou invraisemblable.
     SUM(CASE
-        WHEN amount_fcfa IS NOT NULL
-        THEN amount_fcfa
+        WHEN status = 'delivered'
+        THEN COALESCE(amount_plausible_fcfa, 0)
         ELSE 0
-    END) AS known_order_amount_fcfa
+    END) AS delivered_known_amount_fcfa,
+
+    COUNT_IF(status = 'delivered' AND amount_missing)
+        AS delivered_amount_missing_orders,
+
+    COUNT_IF(status = 'delivered' AND amount_outlier)
+        AS delivered_outlier_amount_orders,
+
+    COUNT_IF(amount_outlier) AS outlier_amount_orders,
+
+    -- Somme brute des montants exclus, pour traçabilité uniquement.
+    SUM(CASE
+        WHEN amount_outlier THEN amount_fcfa
+        ELSE 0
+    END) AS outlier_amount_fcfa
 
 FROM orders o
 

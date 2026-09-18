@@ -105,7 +105,7 @@ def main() -> None:
         cwd=PROJECT_ROOT,
         label="Ingestion",
     )
-    print("[OK] File found. Schema valid (5 sheets -> 5 tables raw_*).")
+    print("[OK] 5 feuilles présentes, colonnes requises vérifiées -> 5 tables raw_*.")
 
     step("2/7 — dbt run (hors modèles dépendants de l'IA)")
     run(

@@ -77,6 +77,11 @@ models:
     description: >
       Commandes WhatsApp agrégées par mois : statuts, montants manquants,
       qualité de parsing des articles, unités par produit et par format.
+      Montants : known_order_amount_fcfa exclut les montants invraisemblables
+      (outlier_amount_orders / outlier_amount_fcfa les comptent à part) ;
+      delivered_known_amount_fcfa est la base "revenu livraison" et doit être
+      lue avec delivered_amount_missing_orders (montant vide) et
+      delivered_outlier_amount_orders (montant aberrant exclu).
 
   - name: mart_whatsapp_customers
     description: >
@@ -91,8 +96,16 @@ models:
           - unique
       - name: order_count
         description: "Nombre de commandes logguées pour ce client."
+      - name: delivered_order_count
+        description: "Nombre de commandes LIVRÉES (les annulées et en cours ne sont pas des achats)."
+      - name: has_delivered_order
+        description: "TRUE si au moins une commande livrée — dénominateur du taux de réachat."
       - name: is_repeat_customer
-        description: "TRUE si order_count > 1 — base du taux de réachat livraison."
+        description: >
+          TRUE si au moins 2 commandes LIVRÉES — numérateur du taux de réachat
+          livraison = clients is_repeat_customer / clients has_delivered_order.
+      - name: is_repeat_customer_any_status
+        description: "Ancienne définition (>= 2 commandes tous statuts) ; surestime le réachat, conservée pour comparaison."
 
   - name: mart_social_monthly
     description: >
@@ -100,3 +113,26 @@ models:
       thème, produit et statut spam, issus de la classification IA
       (int_social_comments_enriched). Le spam doit être exclu des lectures
       de sentiment/thème.
+
+  - name: mart_product_mix_monthly
+    description: >
+      Mix produit des ventes POS : 1 ligne = 1 mois x 1 SKU. Ventes brutes, retours
+      et net séparés ; part du CA net du mois ; prix moyen par unité et par litre.
+      Se réconcilie avec mart_sales_monthly. Les mois avec month_missing_sales_days > 0
+      sont incomplets. Ne couvre pas les commandes WhatsApp.
+    columns:
+      - name: month
+        description: "Premier jour du mois."
+        tests:
+          - not_null
+      - name: product_sku
+        description: "SKU source."
+        tests:
+          - not_null
+      - name: net_revenue_fcfa
+        description: "CA net (ventes brutes moins retours) du SKU pour le mois."
+      - name: revenue_share_of_month
+        description: "Part du CA net du mois."
+      - name: net_revenue_per_litre_fcfa
+        description: "CA net divisé par les litres nets vendus."
+

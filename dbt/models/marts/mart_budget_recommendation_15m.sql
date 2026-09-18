@@ -83,8 +83,8 @@ normalized AS (
 budget_params AS (
 
     SELECT
-        15000000.0 AS total_budget_fcfa,
-        1000000.0 AS floor_per_channel_fcfa,
+        CAST({{ var('total_test_budget_fcfa') }} AS DOUBLE) AS total_budget_fcfa,
+        CAST({{ var('test_budget_floor_per_channel_fcfa') }} AS DOUBLE) AS floor_per_channel_fcfa,
         (SELECT COUNT(*) FROM decision) AS n_channels
 
 ),

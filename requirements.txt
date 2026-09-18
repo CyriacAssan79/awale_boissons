@@ -1,17 +1,23 @@
-pandas
-openpyxl
-duckdb
-dbt-core
-dbt-duckdb
-rapidfuzz
-python-dotenv
-openai
-tenacity
-streamlit
-plotly
-pytest
-jupyter
-transformers
-torch
-accelerate
-scikit-learn
+# Cycle mensuel Awalé Boissons : versions installées et testées ENSEMBLE.
+# Python 3.13 ou 3.14. Installation : pip install -r requirements.txt
+# Pour développer ou rejouer le benchmark IA : pip install -r requirements-dev.txt
+# Pour changer une version : la modifier ici, puis relancer `python run_pipeline.py`
+# et `pytest` (voir README section 14.2).
+
+# --- Ingestion et transformation ---
+pandas==3.0.6
+openpyxl==3.1.5
+duckdb==1.5.5
+dbt-core==1.12.5
+dbt-duckdb==1.11.0
+PyYAML==6.0.3
+
+# --- Dashboard ---
+streamlit==1.58.0
+plotly==7.1.0
+
+# --- Inférence IA locale (Qwen2.5-0.5B-Instruct, sans clé API) ---
+# accelerate est requis par device_map="auto" dans ai/classify_comments_hybrid.py.
+torch==2.12.1
+transformers==5.12.1
+accelerate==1.15.0

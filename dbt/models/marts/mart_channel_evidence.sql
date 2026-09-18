@@ -24,15 +24,23 @@ WITH monthly AS (
 
 ),
 
+-- Le rang est calculé sur les mois du jeu de données (tous canaux confondus) :
+-- "mois le plus récent" désigne donc le même mois pour tous les canaux, même
+-- si un canal n'a pas de ligne ce mois-là (son latest_month_spend reste alors
+-- NULL, et non zéro : une absence de ligne n'est pas une dépense nulle prouvée).
 ranked AS (
 
     SELECT
         *,
-        ROW_NUMBER() OVER (
-            PARTITION BY channel
-            ORDER BY month DESC
-        ) AS month_rank
+        DENSE_RANK() OVER (ORDER BY month DESC) AS month_rank
 
+    FROM monthly
+
+),
+
+period AS (
+
+    SELECT COUNT(DISTINCT month) AS months_in_period
     FROM monthly
 
 ),
@@ -99,9 +107,11 @@ aggregated AS (
             END
         ) AS recent_3m_spend_fcfa,
 
+        -- Les 3 mois précédant les 3 plus récents (rangs 4 à 6) : jamais
+        -- l'historique entier, même quand le jeu de données s'allonge.
         SUM(
             CASE
-                WHEN month_rank > 3
+                WHEN month_rank BETWEEN 4 AND 6
                 THEN campaign_spend_fcfa
                 ELSE 0
             END
@@ -192,8 +202,8 @@ SELECT
     END AS recent_vs_earlier_spend_change,
 
     CASE
-        WHEN a.active_months = 6
-            THEN 'full_6_months'
+        WHEN a.active_months = (SELECT months_in_period FROM period)
+            THEN 'full_period'
         ELSE 'partial_period'
     END AS period_coverage,
 

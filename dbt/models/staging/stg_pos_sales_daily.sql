@@ -33,6 +33,22 @@ cleaned AS (
 
         TRIM(pos_name) AS pos_name,
 
+        /*
+           Clé canonique du point de vente : nom sans accents, en minuscules,
+           espaces normalisés. Le même magasin peut changer de pos_id et de
+           casse d'un mois à l'autre (ex. POS014 "Kiosque Yopougon Ananeraie"
+           puis POS103 "KIOSQUE YOPOUGON ANANERAIE" dès le 1er mai) : pos_id
+           n'est donc PAS un identifiant stable, pos_key l'est. Normalisation
+           exacte uniquement : aucune fusion approximative sans validation
+           humaine (voir int_pos_dimension).
+        */
+        REGEXP_REPLACE(
+            LOWER(STRIP_ACCENTS(TRIM(pos_name))),
+            '\s+',
+            ' ',
+            'g'
+        ) AS pos_key,
+
         /* ============================================================
            COMMUNE
            ============================================================ */
@@ -95,7 +111,7 @@ cleaned AS (
 
 )
 
-SELECT sale_date, pos_id, pos_name_raw, pos_name, commune_raw, commune, channel_raw,
+SELECT sale_date, pos_id, pos_name_raw, pos_name, pos_key, commune_raw, commune, channel_raw,
     channel, product_sku, units_sold, revenue_fcfa,
 
     /* ================================================================

@@ -30,27 +30,37 @@ cleaned AS (
 
         TRIM(month) AS month_raw,
 
+        /*
+           "<mois en français> <année>" -> premier jour du mois.
+           Générique : aucun mois ni année n'est écrit en dur, un nouveau
+           mois du plan média est donc reconnu sans modifier ce modèle.
+           Les accents sont retirés pour accepter "février" et "fevrier".
+           Tout libellé non reconnu reste NULL et remonte via
+           month_parse_failed (et le test stg_media_plan_month).
+        */
         CASE
-            WHEN LOWER(TRIM(month)) = 'janvier 2026'
-                THEN DATE '2026-01-01'
-
-            WHEN LOWER(TRIM(month)) IN (
-                'février 2026',
-                'fevrier 2026'
-            )
-                THEN DATE '2026-02-01'
-
-            WHEN LOWER(TRIM(month)) = 'mars 2026'
-                THEN DATE '2026-03-01'
-
-            WHEN LOWER(TRIM(month)) = 'avril 2026'
-                THEN DATE '2026-04-01'
-
-            WHEN LOWER(TRIM(month)) = 'mai 2026'
-                THEN DATE '2026-05-01'
-
-            WHEN LOWER(TRIM(month)) = 'juin 2026'
-                THEN DATE '2026-06-01'
+            WHEN REGEXP_MATCHES(
+                    LOWER(TRIM(month)),
+                    '^(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)\s+[0-9]{4}$'
+                 )
+                THEN MAKE_DATE(
+                    CAST(REGEXP_EXTRACT(TRIM(month), '([0-9]{4})$', 1) AS INTEGER),
+                    CASE
+                        WHEN LOWER(TRIM(month)) LIKE 'janvier%' THEN 1
+                        WHEN LOWER(TRIM(month)) LIKE 'f%vrier%' THEN 2
+                        WHEN LOWER(TRIM(month)) LIKE 'mars%' THEN 3
+                        WHEN LOWER(TRIM(month)) LIKE 'avril%' THEN 4
+                        WHEN LOWER(TRIM(month)) LIKE 'mai%' THEN 5
+                        WHEN LOWER(TRIM(month)) LIKE 'juin%' THEN 6
+                        WHEN LOWER(TRIM(month)) LIKE 'juillet%' THEN 7
+                        WHEN LOWER(TRIM(month)) LIKE 'ao%t%' THEN 8
+                        WHEN LOWER(TRIM(month)) LIKE 'septembre%' THEN 9
+                        WHEN LOWER(TRIM(month)) LIKE 'octobre%' THEN 10
+                        WHEN LOWER(TRIM(month)) LIKE 'novembre%' THEN 11
+                        WHEN LOWER(TRIM(month)) LIKE 'd%cembre%' THEN 12
+                    END,
+                    1
+                )
 
             ELSE NULL
         END AS month_date,

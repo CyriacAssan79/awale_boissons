@@ -5,6 +5,7 @@ WITH sales AS (
     SELECT
         sale_date,
         pos_id,
+        pos_key,
         pos_name,
         commune,
         channel,
@@ -43,7 +44,9 @@ monthly_sales AS (
         SUM(s.return_units) AS return_units,
         SUM(s.return_revenue_fcfa) AS return_revenue_fcfa,
 
-        COUNT(DISTINCT s.pos_id) AS active_pos,
+        -- Points de vente distincts : compté sur la clé canonique, pas sur
+        -- pos_id (un magasin qui change d'identifiant compterait pour deux).
+        COUNT(DISTINCT s.pos_key) AS active_pos,
         COUNT(DISTINCT s.pos_name) AS active_pos_names,
         COUNT(DISTINCT s.commune) AS active_communes,
 

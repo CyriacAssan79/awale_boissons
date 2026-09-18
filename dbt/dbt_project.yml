@@ -6,6 +6,22 @@ profile: awale_reporting
 
 model-paths: ["models"]
 
+# Paramètres métier : à modifier ici, jamais en dur dans les modèles SQL.
+vars:
+  # Taux de conversion EUR -> FCFA appliqué aux dépenses saisies en euros.
+  # Valeur historique du projet (655,0) ; la parité officielle est 655,957
+  # (écart < 0,15 %, quatre lignes EUR seulement dans le jeu de démarrage).
+  eur_to_fcfa_rate: 655.0
+
+  # Budget de test à répartir et socle d'instrumentation par canal.
+  total_test_budget_fcfa: 15000000
+  test_budget_floor_per_channel_fcfa: 1000000
+
+  # Au-dessus de ce montant, un amount_fcfa WhatsApp est jugé invraisemblable
+  # (panier de 2 à 4 bouteilles à ~1 500 FCFA). Sur le jeu de démarrage, le plus
+  # grand montant plausible est 12 600 et le plus petit aberrant 1 400 000.
+  whatsapp_max_plausible_amount_fcfa: 100000
+
 models:
   awale_reporting:
     staging:
