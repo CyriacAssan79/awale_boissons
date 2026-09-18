@@ -72,7 +72,7 @@ Les commentaires sont enrichis avec `language`, `sentiment`, `theme`, `product` 
 | Spam            | 94% | 88%       |
 | Exact agreement | 8%  | 14%       |
 
-**À lire avec les taux de référence.** Sur ces 50 commentaires, une réponse constante donnerait 72 % en langue, 54 % en sentiment, 22 % en thème, 42 % en produit et 94 % en spam. V1 n'égale que ces taux sur langue, sentiment et spam ; la version hybride progresse sur sentiment, thème et produit mais reste très en dessous en langue (22 % contre 72 %). L'échantillon ne compte que 3 spams. Le champ langue n'est pas utilisable en l'état et la détection de spam est à améliorer : le remplacement du modèle local est prévu (voir `docs/ai_documentation.ipynb` §5).
+**À lire avec les taux de référence.** Sur ces 50 commentaires, une réponse constante donnerait 72 % en langue, 54 % en sentiment, 22 % en thème, 42 % en produit et 94 % en spam. V1 n'égale que ces taux sur langue, sentiment et spam ; la version hybride progresse sur sentiment, thème et produit mais reste très en dessous en langue (22 % contre 72 %). L'échantillon ne compte que 3 spams. Le champ langue n'est pas utilisable en l'état et la détection de spam est à améliorer : le remplacement du modèle local est prévu (voir `docs/ai_documentation.ipynb` 5).
 
 ## 8. Customer Voice — janvier à juin 2026
 
@@ -128,15 +128,15 @@ Avril comporte 14 jours sans données, du 13 au 26 avril, et ne doit donc pas ê
 
 ## 10 bis. WhatsApp — livraison
 
-| Indicateur | Valeur |
-| --- | --- |
-| Commandes | 1 066 (624 livrées, 296 annulées, 146 en cours) |
-| Clients identifiés (téléphone normalisé) | 389, dont 313 avec au moins une commande livrée |
-| Taux de réachat livraison | **57,5 %** (180 clients sur 313, commandes livrées) |
-| Unités commandées (texte parsé) | 4 399 |
-| Montants manquants | 131 commandes (dont 82 livrées) |
-| Montants invraisemblables, exclus | 23 commandes (au-dessus de 100 000 FCFA) |
-| Montant connu et plausible, commandes livrées | 3 135 400 FCFA |
+| Indicateur                                    | Valeur                                              |
+| --------------------------------------------- | --------------------------------------------------- |
+| Commandes                                     | 1 066 (624 livrées, 296 annulées, 146 en cours)     |
+| Clients identifiés (téléphone normalisé)      | 389, dont 313 avec au moins une commande livrée     |
+| Taux de réachat livraison                     | **57,5 %** (180 clients sur 313, commandes livrées) |
+| Unités commandées (texte parsé)               | 4 399                                               |
+| Montants manquants                            | 131 commandes (dont 82 livrées)                     |
+| Montants invraisemblables, exclus             | 23 commandes (au-dessus de 100 000 FCFA)            |
+| Montant connu et plausible, commandes livrées | 3 135 400 FCFA                                      |
 
 Le montant des commandes livrées **n'est pas un revenu livraison** : 96 des 624 commandes livrées (15,4 %) n'ont pas de montant exploitable (82 sans montant, 14 avec un montant invraisemblable), et aucun total n'est extrapolé.
 
@@ -160,7 +160,7 @@ au prorata de `part de dépense observée × bonus de qualité d'evidence` (evid
 complétude des données, pas de la performance commerciale). Cette allocation se recalcule donc si
 les données du mois prochain changent — ce n'est ni un classement causal, ni un montant figé. Le budget total et le socle par canal sont des paramètres (`total_test_budget_fcfa`, `test_budget_floor_per_channel_fcfa` dans `dbt/dbt_project.yml`).
 
-**Limite de la base de calcul.** La répartition suit la dépense observée dans l'export campagne, qui sous-représente les canaux saisis à la main : la radio pèse 12,6 % de l'export contre 26,2 % du facturé (plan média), les influenceurs 5,7 % contre 8,3 %, l'activation terrain 0 % contre 13,8 %. L'allocation hérite de ce biais. Le choix de la base (dépense observée ou facturé) est à trancher avec Kômian : voir `docs/business_problem.ipynb` §6 bis.
+**Limite de la base de calcul.** La répartition suit la dépense observée dans l'export campagne, qui sous-représente les canaux saisis à la main : la radio pèse 12,6 % de l'export contre 26,2 % du facturé (plan média), les influenceurs 5,7 % contre 8,3 %, l'activation terrain 0 % contre 13,8 %. L'allocation hérite de ce biais. Le choix de la base (dépense observée ou facturé) est à trancher avec Kômian : voir `docs/business_problem.ipynb` 6 bis.
 
 ## 12. Conditions de test
 
@@ -230,7 +230,7 @@ export du texte des commentaires → inférence IA → rechargement des prédict
 `dbt run` complet → `dbt test`. Options : `--skip-ai` (réutilise les prédictions déjà présentes),
 `--skip-tests`.
 
-**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning ; `pytest` : 56/56 tests (voir §14.5).
+**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning ; `pytest` : 56/56 tests (voir 14.5).
 
 Le chargement (`ingestion/load_raw.py`) valide les cinq feuilles et leurs colonnes **avant** d'écrire : une feuille absente, vide ou incomplète interrompt le run avec un message clair, sans modifier la base.
 
@@ -282,7 +282,7 @@ awale_boissons/
 │   ├── export_ai_input.py
 │   └── create_ai_sample.py
 ├── data/
-│   ├── raw/          (non versionné — voir §14.1)
+│   ├── raw/          (non versionné — voir 14.1)
 │   └── processed/
 ├── dbt/
 │   ├── models/staging/
@@ -313,18 +313,18 @@ d'IA mesurés sur l'historique complet). `run_pipeline.py` (sans `--skip-ai`) a
 été exécuté de bout en bout le 2026-09-18 ; les temps ci-dessous sont mesurés sur ce run, sauf
 mention contraire :
 
-| Étape                                    | Temps            | Nature |
-| ------------------------------------------ | ---------------- | ------ |
-| Préparation fichiers                        | 10 min           | Estimé — revue humaine, non mesurable par un run |
-| Ingestion (`load_raw.py`)                   | **2,5 s mesurés**  | — |
-| dbt run (1<sup>re</sup> passe, hors IA)     | **7 s mesurés**    | — |
-| Export texte IA                             | **1,1 s mesuré**   | — |
-| Inférence IA                                | ~45 min pour un mois type (~470 nouveaux commentaires, débit de 5,55 s/commentaire mesuré sur un échantillon de 120) ; **~262 min pour le tout premier run** — voir `docs/ai_documentation.ipynb` §8 | Mesuré et extrapolé |
-| Rechargement prédictions                    | **2,3 s mesurés**  | — |
-| dbt run (2<sup>e</sup> passe, complet)      | **13,8 s mesurés** | — |
-| dbt test                                    | **10,2 s mesurés** | — |
-| Contrôles qualité                            | 10 min           | Estimé — revue humaine |
-| Dashboard                                    | 5 min            | Estimé — revue humaine |
+| Étape                                   | Temps                                                                                                                                                                                               | Nature                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| Préparation fichiers                    | 10 min                                                                                                                                                                                              | Estimé — revue humaine, non mesurable par un run |
+| Ingestion (`load_raw.py`)               | **2,5 s mesurés**                                                                                                                                                                                   | —                                                |
+| dbt run (1<sup>re</sup> passe, hors IA) | **7 s mesurés**                                                                                                                                                                                     | —                                                |
+| Export texte IA                         | **1,1 s mesuré**                                                                                                                                                                                    | —                                                |
+| Inférence IA                            | ~45 min pour un mois type (~470 nouveaux commentaires, débit de 5,55 s/commentaire mesuré sur un échantillon de 120) ; **~262 min pour le tout premier run** — voir `docs/ai_documentation.ipynb` 8 | Mesuré et extrapolé                              |
+| Rechargement prédictions                | **2,3 s mesurés**                                                                                                                                                                                   | —                                                |
+| dbt run (2<sup>e</sup> passe, complet)  | **13,8 s mesurés**                                                                                                                                                                                  | —                                                |
+| dbt test                                | **10,2 s mesurés**                                                                                                                                                                                  | —                                                |
+| Contrôles qualité                       | 10 min                                                                                                                                                                                              | Estimé — revue humaine                           |
+| Dashboard                               | 5 min                                                                                                                                                                                               | Estimé — revue humaine                           |
 
 Constat : dbt/DuckDB ne coûtent quasiment rien (~35 s cumulées, mesurées) — tout le temps du
 cycle mensuel vient de l'IA (~45 min) et de la revue humaine (25 min, non compressible).
