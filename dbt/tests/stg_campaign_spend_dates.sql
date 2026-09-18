@@ -7,4 +7,4 @@ SELECT
     platform
 FROM stg_campaign_spend
 WHERE date_start IS NULL
-   OR date_end IS NULL;
+   OR date_end IS NULL

@@ -93,6 +93,14 @@ channel_evidence = load_query(
     """
 )
 
+recommendation = load_query(
+    """
+    SELECT *
+    FROM mart_budget_recommendation_15m
+    ORDER BY proposed_budget_fcfa DESC
+    """
+)
+
 whatsapp = load_query(
     """
     SELECT *
@@ -596,42 +604,61 @@ st.info(
     "de pilotage. Elle ne calcule pas de ROI causal par canal."
 )
 
-decision_cols = [
-    "channel",
-    "campaign_spend_fcfa",
-    "spend_share",
-    "planned_share",
-    "spend_vs_plan_ratio",
-    "cpc_fcfa",
-    "cpm_fcfa",
-    "data_quality_status",
-]
+st.markdown("**Proposition de répartition — 15 M FCFA**")
 
-decision_view = allocation[
-    [c for c in decision_cols if c in allocation.columns]
-].copy()
+recommendation_view = recommendation[[
+    "channel", "proposed_budget_fcfa", "proposed_share",
+    "allocation_rationale", "test_condition",
+]].copy()
+recommendation_view["proposed_budget_fcfa"] = recommendation_view["proposed_budget_fcfa"].round(0).astype(int)
+recommendation_view["proposed_share"] = (recommendation_view["proposed_share"] * 100).round(1)
+total_recommended = recommendation_view["proposed_budget_fcfa"].sum()
 
-if "spend_share" in decision_view.columns:
-    decision_view["spend_share"] = (
-        decision_view["spend_share"] * 100
-    ).round(1)
-
-if "planned_share" in decision_view.columns:
-    decision_view["planned_share"] = (
-        decision_view["planned_share"] * 100
-    ).round(1)
-
-if "spend_vs_plan_ratio" in decision_view.columns:
-    decision_view["spend_vs_plan_ratio"] = (
-        decision_view["spend_vs_plan_ratio"] * 100
-    ).round(1)
-
+col1, col2 = st.columns([1.05, 1.95])
+with col1:
+    st.metric("Budget total à tester", money(total_recommended))
+    st.caption("Répartition proposée pour un horizon de test de 90 jours.")
+with col2:
+    fig_recommendation = px.bar(
+        recommendation_view, x="channel", y="proposed_budget_fcfa",
+        title="Répartition proposée des 15 M FCFA",
+        labels={"channel": "Canal", "proposed_budget_fcfa": "Budget proposé (FCFA)"},
+        text="proposed_budget_fcfa",
+    )
+    fig_recommendation.update_layout(xaxis_tickangle=-30, showlegend=False)
+    fig_recommendation.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
+    st.plotly_chart(fig_recommendation, use_container_width=True)
 
 st.dataframe(
-    decision_view,
-    hide_index=True,
-    use_container_width=True,
+    recommendation_view, hide_index=True, use_container_width=True,
+    column_config={
+        "channel": "Canal",
+        "proposed_budget_fcfa": st.column_config.NumberColumn("Budget proposé (FCFA)", format="%.0f"),
+        "proposed_share": st.column_config.NumberColumn("Part proposée (%)", format="%.1f"),
+        "allocation_rationale": "Pourquoi tester ce canal",
+        "test_condition": "Condition de test",
+    },
 )
+
+with st.expander("Voir le contexte historique et la qualité de mesure"):
+    historical_cols = [
+        "channel", "campaign_spend_fcfa", "spend_share", "planned_share",
+        "spend_vs_plan_ratio", "cpc_fcfa", "cpm_fcfa", "data_quality_status",
+    ]
+    historical_view = allocation[[c for c in historical_cols if c in allocation.columns]].copy()
+    for c in ["spend_share", "planned_share", "spend_vs_plan_ratio"]:
+        if c in historical_view.columns:
+            historical_view[c] = (historical_view[c] * 100).round(1)
+    st.dataframe(historical_view, hide_index=True, use_container_width=True, column_config={
+        "channel": "Canal",
+        "campaign_spend_fcfa": st.column_config.NumberColumn("Dépense historique (FCFA)", format="%.0f"),
+        "spend_share": st.column_config.NumberColumn("Part dépense (%)", format="%.1f"),
+        "planned_share": st.column_config.NumberColumn("Part plan (%)", format="%.1f"),
+        "spend_vs_plan_ratio": st.column_config.NumberColumn("Dépense / plan (%)", format="%.1f"),
+        "cpc_fcfa": st.column_config.NumberColumn("CPC (FCFA)", format="%.0f"),
+        "cpm_fcfa": st.column_config.NumberColumn("CPM (FCFA)", format="%.0f"),
+        "data_quality_status": "Qualité",
+    })
 
 st.subheader("Cadre de test pour les prochains 15 M FCFA")
 
@@ -657,6 +684,11 @@ test_plan = pd.DataFrame(
 )
 
 st.table(test_plan)
+
+if total_recommended != 15_000_000:
+    st.error(f"Contrôle budget : la proposition totalise {money(total_recommended)} au lieu de 15 000 000 FCFA.")
+else:
+    st.success("Contrôle budget : la proposition totalise exactement 15 000 000 FCFA.")
 
 
 # =====================================================================
