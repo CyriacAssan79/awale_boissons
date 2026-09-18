@@ -536,11 +536,48 @@ def model_classification_batch(
 
     return predictions
 
+OUTPUT_COLUMNS = [
+    "comment_id",
+    "comment_text",
+    "language_model",
+    "sentiment_model",
+    "theme_model",
+    "product_model",
+    "is_spam_model",
+    "model_used",
+    "rules_complete",
+]
+
+
+def load_existing_predictions() -> pd.DataFrame:
+    """Prédictions déjà produites lors d'un run précédent, s'il y en a.
+
+    Le traitement est incrémental : un commentaire déjà présent ici n'est
+    jamais reclassé. Pour forcer une reclassification complète (nouvelle
+    version de modèle ou de prompt), supprimer OUTPUT_FILE avant de lancer.
+    """
+    if not OUTPUT_FILE.exists():
+        return pd.DataFrame(columns=OUTPUT_COLUMNS)
+
+    return pd.read_csv(OUTPUT_FILE)
+
+
 def main():
 
     df = pd.read_csv(INPUT_FILE)
+    existing = load_existing_predictions()
 
-    print(f"Commentaires chargés : {len(df)}")
+    already_done = set(existing["comment_id"])
+    df = df[~df["comment_id"].isin(already_done)].reset_index(drop=True)
+
+    print(f"Commentaires source            : {len(existing) + len(df)}")
+    print(f"Déjà classés (runs précédents) : {len(existing)}")
+    print(f"À classer ce run               : {len(df)}")
+
+    if df.empty:
+        print("\nRien à classer ce mois-ci — prédictions déjà à jour.")
+        print(f"Output : {OUTPUT_FILE}")
+        return
 
     tokenizer, model = load_model()
 
@@ -655,7 +692,17 @@ def main():
             f"{elapsed:.2f}s"
         )
 
-    output = pd.DataFrame(results)
+    new_predictions = pd.DataFrame(results)
+
+    # Fusion avec l'existant : traitement incrémental, jamais un écrasement.
+    # keep="last" au cas où un comment_id serait reclassé volontairement
+    # (OUTPUT_FILE supprimé puis un sous-ensemble relancé).
+    output = (
+        pd.concat([existing, new_predictions], ignore_index=True)
+        .drop_duplicates(subset="comment_id", keep="last")
+        .sort_values("comment_id")
+        .reset_index(drop=True)
+    )
 
     OUTPUT_FILE.parent.mkdir(
         parents=True,
@@ -668,19 +715,20 @@ def main():
     )
 
     print("\n" + "=" * 70)
-    print("RÉSULTAT V2 HYBRIDE — FULL DATASET")
+    print("RÉSULTAT V2 HYBRIDE — INCRÉMENTAL")
     print("=" * 70)
 
-    print(f"Total               : {len(output)}")
+    print(f"Classés ce run       : {len(new_predictions)}")
     print(
-        f"Règles seules       : "
-        f"{(~output['model_used']).sum()}"
+        f"  dont règles seules  : "
+        f"{(~new_predictions['model_used']).sum()}"
     )
     print(
-        f"Modèle local utilisé: "
-        f"{output['model_used'].sum()}"
+        f"  dont modèle local   : "
+        f"{new_predictions['model_used'].sum()}"
     )
-    print(f"Output              : {OUTPUT_FILE}")
+    print(f"Total accumulé (fichier) : {len(output)}")
+    print(f"Output                   : {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()

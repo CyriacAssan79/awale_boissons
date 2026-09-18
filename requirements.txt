@@ -11,3 +11,7 @@ streamlit
 plotly
 pytest
 jupyter
+transformers
+torch
+accelerate
+scikit-learn

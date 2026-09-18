@@ -9,7 +9,7 @@ WITH source_data AS (
         product_sku,
         units_sold,
         revenue_fcfa
-    FROM "awale"."main"."raw_pos_sales_daily"
+    FROM {{ source('raw', 'raw_pos_sales_daily') }}
 
 ),
 

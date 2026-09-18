@@ -1,0 +1,10 @@
+.dist
+.env
+dbt/target
+dbt/logs
+__pycache__/
+*.pyc
+.pytest_cache
+data/raw/
+data/awale.duckdb
+dbt/awale.duckdb

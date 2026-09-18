@@ -110,28 +110,34 @@ Le media plan indique cependant 2,41 M FCFA facturés pour l'activation terrain 
 
 | Mois    | CA net       |
 | ------- | ------------ |
-| Janvier | 17,66 M FCFA |
-| Février | 16,15 M FCFA |
-| Mars    | 20,80 M FCFA |
+| Janvier | 17,65 M FCFA |
+| Février | 16,12 M FCFA |
+| Mars    | 20,73 M FCFA |
 | Avril   | 6,55 M FCFA  |
-| Mai     | 12,49 M FCFA |
-| Juin    | 14,16 M FCFA |
+| Mai     | 12,47 M FCFA |
+| Juin    | 14,13 M FCFA |
+
+CA net = CA brut diminué des retours (`net_revenue_fcfa` dans `mart_sales_monthly`). Les retours représentent 0,06 % à 0,3 % du CA brut selon les mois — un écart faible mais réel, qu'il n'est pas correct d'ignorer en affichant le brut sous l'étiquette « net ».
 
 Avril comporte 14 jours sans données, du 13 au 26 avril, et ne doit donc pas être interprété comme un mois complet.
 
 ## 11. Allocation proposée — 15 M FCFA
 
-| Canal              | Budget          |
-| ------------------ | --------------- |
-| Meta               | 5,0 M FCFA      |
-| TikTok             | 4,0 M FCFA      |
-| Google             | 2,5 M FCFA      |
-| Radio              | 1,5 M FCFA      |
-| Influenceurs       | 1,0 M FCFA      |
-| Activation terrain | 1,0 M FCFA      |
-| **Total**          | **15,0 M FCFA** |
+| Canal              | Budget          | Part      |
+| ------------------ | --------------- | --------- |
+| Meta               | 5,55 M FCFA     | 37,0 %    |
+| TikTok             | 3,10 M FCFA     | 20,7 %    |
+| Radio              | 2,00 M FCFA     | 13,3 %    |
+| Google             | 1,90 M FCFA     | 12,7 %    |
+| Influenceurs       | 1,45 M FCFA     | 9,7 %     |
+| Activation terrain | 1,00 M FCFA     | 6,7 %     |
+| **Total**          | **15,0 M FCFA** | **100 %** |
 
-Cette proposition est un budget de test et d'instrumentation, pas un classement causal.
+Calcul (`dbt/models/marts/mart_budget_recommendation_15m.sql`) : un socle de 1 M FCFA par canal
+finance l'instrumentation même des canaux les moins mesurés, puis le reliquat (9 M FCFA) est réparti
+au prorata de `part de dépense observée × bonus de qualité d'evidence` (evidence_quality vient de la
+complétude des données, pas de la performance commerciale). Cette allocation se recalcule donc si
+les données du mois prochain changent — ce n'est ni un classement causal, ni un montant figé.
 
 ## 12. Conditions de test
 
@@ -149,14 +155,41 @@ Cette proposition est un budget de test et d'instrumentation, pas un classement 
 
 ## 14. Reproductibilité
 
+### 14.1 Données sources
+
+Le fichier `data/raw/awale_boissons_starter_dataset.xlsx` (5 feuilles : `campaign_spend_export`,
+`media_plan`, `pos_sales_daily`, `whatsapp_orders`, `social_comments`) n'est **pas** versionné dans
+ce dépôt (voir `.gitignore`). Avant tout run :
+
+1. Récupérer le fichier auprès de Kômian (starter dataset du challenge, ou export mensuel équivalent
+   pour un run en production).
+2. Le déposer tel quel dans `data/raw/awale_boissons_starter_dataset.xlsx` (le dossier est créé
+   automatiquement si besoin par `ingestion/load_raw.py`).
+
+Si le fichier est absent, `ingestion/load_raw.py` (et donc `run_pipeline.py`) s'arrête proprement
+avec un `FileNotFoundError` explicite plutôt que d'échouer plus loin de façon obscure.
+
+### 14.2 Installation
+
 ```bash
-cd /mnt/c/Users/KSOMS/Favorites/awale_boissons
-cd dbt
-dbt run
-dbt test
-cd ..
+python -m venv .venv
+# Windows : .venv\Scripts\activate | macOS/Linux : source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 14.3 Run complet
+
+Depuis la racine du projet (aucun chemin codé en dur — fonctionne sur n'importe quelle machine) :
+
+```bash
+python run_pipeline.py
 streamlit run app/app.py
 ```
+
+`run_pipeline.py` enchaîne : ingestion des 5 sources → `dbt run` (hors modèles dépendants de l'IA) →
+export du texte des commentaires → inférence IA → rechargement des prédictions dans DuckDB →
+`dbt run` complet → `dbt test`. Options : `--skip-ai` (réutilise les prédictions déjà présentes),
+`--skip-tests`.
 
 **Validation actuelle :** 22/22 modèles dbt et 74/74 tests dbt, avec 0 erreur et 0 warning.
 
@@ -169,8 +202,11 @@ awale_boissons/
 ├── ai/
 │   ├── classify_comments_hybrid.py
 │   └── evaluation/
+├── analysis/
+│   ├── export_ai_input.py
+│   └── create_ai_sample.py
 ├── data/
-│   ├── raw/
+│   ├── raw/          (non versionné — voir §14.1)
 │   └── processed/
 ├── dbt/
 │   ├── models/staging/
@@ -179,23 +215,42 @@ awale_boissons/
 │   ├── tests/
 │   └── dbt_project.yml
 ├── docs/
+├── ingestion/
+│   ├── load_raw.py
+│   └── load_predictions.py
 ├── requirements.txt
+├── run_pipeline.py
 └── README.md
 ```
 
 ## 16. Run mensuel
 
-Cible : environ 50–55 minutes.
+Cible : environ 70 minutes en mois régulier — **encore au-dessus de l'heure visée par le brief**,
+mais loin des ~302 min d'avant l'optimisation incrémentale (40 min de socle fixe estimé + 262 min
+d'IA mesurés sur l'historique complet). `run_pipeline.py` (sans `--skip-ai`) a
+été exécuté de bout en bout le 2026-09-18 ; les temps ci-dessous sont mesurés sur ce run, sauf
+mention contraire :
 
-| Étape       | Cible     |
-| ----------- | --------- |
-| Préparation | 10 min    |
-| DuckDB      | 5 min     |
-| dbt run     | 5 min     |
-| dbt test    | 5 min     |
-| Qualité     | 10 min    |
-| IA          | 10–15 min |
-| Dashboard   | 5 min     |
+| Étape                                    | Temps            | Nature |
+| ------------------------------------------ | ---------------- | ------ |
+| Préparation fichiers                        | 10 min           | Estimé — revue humaine, non mesurable par un run |
+| Ingestion (`load_raw.py`)                   | **2,5 s mesurés**  | — |
+| dbt run (1<sup>re</sup> passe, hors IA)     | **7 s mesurés**    | — |
+| Export texte IA                             | **1,1 s mesuré**   | — |
+| Inférence IA                                | ~45 min pour un mois type (~470 nouveaux commentaires, débit de 5,55 s/commentaire mesuré sur un échantillon de 120) ; **~262 min pour le tout premier run** — voir `docs/ai_documentation.ipynb` §8 | Mesuré et extrapolé |
+| Rechargement prédictions                    | **2,3 s mesurés**  | — |
+| dbt run (2<sup>e</sup> passe, complet)      | **13,8 s mesurés** | — |
+| dbt test                                    | **10,2 s mesurés** | — |
+| Contrôles qualité                            | 10 min           | Estimé — revue humaine |
+| Dashboard                                    | 5 min            | Estimé — revue humaine |
+
+Constat : dbt/DuckDB ne coûtent quasiment rien (~35 s cumulées, mesurées) — tout le temps du
+cycle mensuel vient de l'IA (~45 min) et de la revue humaine (25 min, non compressible).
+`classify_comments_hybrid.py` est incrémental : il ne classe que les `comment_id` absents de
+`ai/evaluation/social_comments_predictions_v2_full.csv` (validé deux fois : retrait de 15 puis de
+10 commentaires, relance, résultats bit-à-bit identiques aux prédictions d'origine). Piste
+restante pour repasser sous l'heure : réduire `max_new_tokens` ou augmenter `BATCH_SIZE` côté
+modèle — non implémenté.
 
 Le détail figure dans `Awale_Boissons_Runbook_Mensuel.pdf`.
 

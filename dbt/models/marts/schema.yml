@@ -1,0 +1,102 @@
+version: 2
+
+models:
+
+  - name: mart_sales_monthly
+    description: >
+      Ventes mensuelles agrégées (brut, retours, net) avec couverture du
+      calendrier de ventes. Le CA net est net_revenue_fcfa, pas
+      gross_revenue_fcfa — voir les colonnes de retour ci-dessous.
+    columns:
+      - name: month
+        description: "Mois calendaire."
+        tests:
+          - not_null
+      - name: net_revenue_fcfa
+        description: "CA après prise en compte des retours (gross + returns, returns négatifs)."
+      - name: gross_revenue_fcfa
+        description: "CA avant retours — à ne jamais présenter comme le CA net."
+      - name: missing_sales_days
+        description: "Jours du mois sans donnée de vente source (jamais assimilés à zéro vente)."
+
+  - name: mart_budget_allocation
+    description: >
+      Dépenses marketing observées par canal (export campagne) confrontées
+      au plan média (planifié/facturé), avec métriques CPC/CPM quand
+      impressions et clics existent.
+
+  - name: mart_channel_evidence
+    description: >
+      Étend mart_budget_allocation avec des indicateurs de robustesse par
+      canal (couverture temporelle, échecs de parsing, tendance récente du
+      spend) utilisés pour qualifier data_quality_status.
+
+  - name: mart_decision_15m
+    description: >
+      Table pivot pour la décision budgétaire : combine mart_channel_evidence,
+      mart_budget_allocation et mart_monthly_performance, et dérive
+      evidence_quality / measurement_profile par canal. Ne contient pas
+      encore le montant proposé (voir mart_budget_recommendation_15m).
+
+  - name: mart_budget_recommendation_15m
+    description: >
+      Allocation calculée des 15 M FCFA de budget de test : socle
+      d'instrumentation par canal + reliquat réparti au prorata de
+      (part de dépense observée x qualité d'evidence). Recalculée à
+      chaque run — jamais un montant figé.
+    columns:
+      - name: proposed_budget_fcfa
+        description: "Budget proposé par canal, calculé — somme toujours égale à 15 000 000."
+      - name: allocation_rationale
+        description: "Justification qualitative de l'allocation pour ce canal."
+      - name: test_condition
+        description: "Condition de mesure à mettre en place pour que ce canal soit mieux évalué."
+
+  - name: mart_decision_budget
+    description: >
+      Vue mensuelle (plutôt que par canal) du spend, du CA net et des
+      métriques média blended, pour suivre la tendance globale du budget
+      face aux ventes.
+
+  - name: mart_marketing_channel_monthly
+    description: "Dépense marketing (export campagne) par canal et par mois."
+
+  - name: mart_channel_performance_monthly
+    description: >
+      Dépense et media plan par canal et par mois, croisés avec le CA net
+      du mois. ATTENTION : le CA net est répété identique sur chaque ligne
+      canal (c'est un CA mensuel total, pas un CA par canal) — ne jamais
+      l'utiliser pour attribuer le CA à un canal.
+
+  - name: mart_monthly_performance
+    description: >
+      Vue mensuelle globale combinant ventes nettes et dépense marketing
+      totale, utilisée par le dashboard (KPI globaux, bloc 1 et 2).
+
+  - name: mart_whatsapp_monthly
+    description: >
+      Commandes WhatsApp agrégées par mois : statuts, montants manquants,
+      qualité de parsing des articles, unités par produit et par format.
+
+  - name: mart_whatsapp_customers
+    description: >
+      Grain client sur le canal WhatsApp (clé = téléphone normalisé),
+      utilisé pour le KPI de taux de réachat livraison. customer_key est
+      déclaratif, pas une identité vérifiée.
+    columns:
+      - name: customer_key
+        description: "Téléphone normalisé — clé client déclarative, pas vérifiée."
+        tests:
+          - not_null
+          - unique
+      - name: order_count
+        description: "Nombre de commandes logguées pour ce client."
+      - name: is_repeat_customer
+        description: "TRUE si order_count > 1 — base du taux de réachat livraison."
+
+  - name: mart_social_monthly
+    description: >
+      Customer Voice mensuelle : volumes de commentaires par sentiment,
+      thème, produit et statut spam, issus de la classification IA
+      (int_social_comments_enriched). Le spam doit être exclu des lectures
+      de sentiment/thème.

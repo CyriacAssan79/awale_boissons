@@ -1,10 +1,14 @@
+import os
 from pathlib import Path
 import duckdb
 import pandas as pd
 
-DATA_DIR = Path("/mnt/c/Users/KSOMS/Favorites/awale_boissons/data/raw")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = Path(os.environ.get("AWALE_RAW_DIR", PROJECT_ROOT / "data" / "raw"))
 RAW_DIR = DATA_DIR
-DB_PATH = Path("../data/awale.duckdb")
+DB_PATH = Path(
+    os.environ.get("AWALE_DUCKDB_PATH", PROJECT_ROOT / "data" / "awale.duckdb")
+)
 SOURCE_FILE = RAW_DIR / "awale_boissons_starter_dataset.xlsx"
 
 SHEETS = {

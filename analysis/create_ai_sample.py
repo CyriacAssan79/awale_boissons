@@ -1,13 +1,19 @@
+import os
 from pathlib import Path
 import duckdb
 import pandas as pd
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
 DB_PATH = Path(
-    "/mnt/c/Users/KSOMS/Favorites/awale_boissons/data/awale.duckdb"
+    os.environ.get("AWALE_DUCKDB_PATH", PROJECT_ROOT / "data" / "awale.duckdb")
 )
 
 OUTPUT_PATH = Path(
-    "/mnt/c/Users/KSOMS/Favorites/awale_boissons/ai/evaluation/labeled_sample.csv"
+    os.environ.get(
+        "AWALE_LABELED_SAMPLE_PATH",
+        PROJECT_ROOT / "ai" / "evaluation" / "labeled_sample.csv",
+    )
 )
 
 

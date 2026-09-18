@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 
 import pandas as pd
@@ -5,8 +6,24 @@ from sklearn.metrics import accuracy_score, classification_report
 
 
 HUMAN_FILE = Path("ai/evaluation/labeled_sample.csv")
-MODEL_FILE = Path("ai/evaluation/model_predictions_hybrid.csv")
-OUTPUT_FILE = Path("ai/evaluation/classification_errors.csv")
+
+MODEL_FILES = {
+    "hybrid": Path("ai/evaluation/model_predictions_hybrid.csv"),
+    "local": Path("ai/evaluation/model_predictions_local.csv"),
+}
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Évalue un fichier de prédictions contre le benchmark humain."
+    )
+    parser.add_argument(
+        "--model",
+        choices=sorted(MODEL_FILES),
+        default="hybrid",
+        help="Version à évaluer (défaut : hybrid).",
+    )
+    return parser.parse_args()
 
 
 def normalize_bool(value):
@@ -36,8 +53,12 @@ def normalize_text(value):
 
 def main():
 
+    args = parse_args()
+    model_file = MODEL_FILES[args.model]
+    output_file = Path(f"ai/evaluation/classification_errors_{args.model}.csv")
+
     human = pd.read_csv(HUMAN_FILE)
-    model = pd.read_csv(MODEL_FILE)
+    model = pd.read_csv(model_file)
 
     # ------------------------------------------------------------
     # Vérification des colonnes
@@ -87,7 +108,7 @@ def main():
 
     if missing_model:
         raise ValueError(
-            f"Colonnes manquantes dans model_predictions_local.csv : "
+            f"Colonnes manquantes dans {model_file.name} : "
             f"{missing_model}"
         )
 
@@ -372,7 +393,7 @@ def main():
     ].copy()
 
     errors.to_csv(
-        OUTPUT_FILE,
+        output_file,
         index=False,
     )
 
@@ -385,7 +406,7 @@ def main():
         f"{len(errors)}"
     )
 
-    print(f"Fichier : {OUTPUT_FILE}")
+    print(f"Fichier : {output_file}")
 
     # ------------------------------------------------------------
     # Résumé final

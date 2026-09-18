@@ -1,5 +1,17 @@
 {{ config(materialized='table') }}
 
+-- ======================================================================
+-- Allocation des 15 M FCFA — calculée, pas fixée en dur.
+--
+-- Principe : chaque canal reçoit un socle fixe pour financer son
+-- instrumentation (même les canaux les moins mesurés), puis le reliquat
+-- est réparti au prorata d'un score = part de dépense observée x bonus
+-- de qualité d'evidence. Cette allocation recalcule donc différemment
+-- si les données du mois prochain changent (spend_share, evidence_quality) ;
+-- elle ne prétend pas mesurer un ROI causal par canal — c'est un budget
+-- de test pondéré par ce qu'on peut honnêtement observer aujourd'hui.
+-- ======================================================================
+
 WITH decision AS (
 
     SELECT
@@ -16,8 +28,112 @@ WITH decision AS (
         cpm_fcfa,
         data_quality_status,
         evidence_quality,
-        measurement_profile
+        measurement_profile,
+        observed_spend_share
     FROM {{ ref('mart_decision_15m') }}
+
+),
+
+-- ----------------------------------------------------------------------
+-- Score = part de dépense observée x bonus lié à la qualité d'evidence.
+-- Le bonus récompense la robustesse des données disponibles pour un
+-- canal (evidence_quality, déjà calculée dans mart_decision_15m à partir
+-- de la complétude des données, pas de la performance commerciale) —
+-- il ne récompense jamais un CPC/CPM plus bas, ce qui reviendrait à
+-- confondre coût média et efficacité commerciale.
+-- ----------------------------------------------------------------------
+scored AS (
+
+    SELECT
+        channel,
+
+        COALESCE(observed_spend_share, 0)
+        * CASE evidence_quality
+            WHEN 'high' THEN 1.5
+            WHEN 'medium' THEN 1.3
+            ELSE 1.0
+        END AS raw_score
+
+    FROM decision
+
+),
+
+normalized AS (
+
+    SELECT
+        channel,
+        raw_score,
+
+        CASE
+            WHEN SUM(raw_score) OVER () > 0
+                THEN raw_score / SUM(raw_score) OVER ()
+            ELSE 1.0 / COUNT(*) OVER ()
+        END AS score_share
+
+    FROM scored
+
+),
+
+-- ----------------------------------------------------------------------
+-- Budget total : 15 M FCFA. Socle fixe de 1 M FCFA par canal pour
+-- financer l'instrumentation même des canaux les moins mesurés
+-- (radio, influenceurs, activation terrain) ; le reliquat est réparti
+-- au prorata du score ci-dessus.
+-- ----------------------------------------------------------------------
+budget_params AS (
+
+    SELECT
+        15000000.0 AS total_budget_fcfa,
+        1000000.0 AS floor_per_channel_fcfa,
+        (SELECT COUNT(*) FROM decision) AS n_channels
+
+),
+
+allocated AS (
+
+    SELECT
+        n.channel,
+        n.score_share,
+
+        bp.floor_per_channel_fcfa
+        + n.score_share
+          * (bp.total_budget_fcfa - bp.floor_per_channel_fcfa * bp.n_channels)
+            AS raw_budget_fcfa
+
+    FROM normalized AS n
+    CROSS JOIN budget_params AS bp
+
+),
+
+-- Arrondi à 50 000 FCFA pour un budget lisible côté client ; le résidu
+-- d'arrondi est absorbé par le canal au budget calculé le plus élevé
+-- pour que le total retombe exactement sur 15 000 000 FCFA.
+rounded AS (
+
+    SELECT
+        channel,
+        raw_budget_fcfa,
+        ROUND(raw_budget_fcfa / 50000.0) * 50000.0 AS rounded_budget_fcfa
+
+    FROM allocated
+
+),
+
+reconciled AS (
+
+    SELECT
+        channel,
+        raw_budget_fcfa,
+        rounded_budget_fcfa
+
+        + CASE
+            WHEN raw_budget_fcfa = MAX(raw_budget_fcfa) OVER ()
+                THEN (SELECT total_budget_fcfa FROM budget_params)
+                     - SUM(rounded_budget_fcfa) OVER ()
+            ELSE 0
+        END AS proposed_budget_fcfa
+
+    FROM rounded
 
 ),
 
@@ -25,16 +141,6 @@ recommendation AS (
 
     SELECT
         channel,
-
-        CASE channel
-            WHEN 'Meta' THEN 5000000
-            WHEN 'TikTok' THEN 4000000
-            WHEN 'Google' THEN 2500000
-            WHEN 'Radio' THEN 1500000
-            WHEN 'Influenceurs' THEN 1000000
-            WHEN 'Activation terrain' THEN 1000000
-            ELSE 0
-        END AS proposed_budget_fcfa,
 
         CASE channel
             WHEN 'Meta' THEN
@@ -96,12 +202,14 @@ SELECT
 
     r.proposed_budget_fcfa,
 
-    r.proposed_budget_fcfa / 15000000.0
+    r.proposed_budget_fcfa / (SELECT total_budget_fcfa FROM budget_params)
         AS proposed_share,
 
-    r.allocation_rationale,
-    r.test_condition
+    rec.allocation_rationale,
+    rec.test_condition
 
 FROM decision AS d
-JOIN recommendation AS r
+JOIN reconciled AS r
     ON d.channel = r.channel
+JOIN recommendation AS rec
+    ON d.channel = rec.channel

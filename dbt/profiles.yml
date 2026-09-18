@@ -3,5 +3,5 @@ awale_reporting:
   outputs:
     dev:
       type: duckdb
-      path: /mnt/c/Users/KSOMS/Favorites/awale_boissons/data/awale.duckdb
+      path: "{{ env_var('AWALE_DUCKDB_PATH', '../data/awale.duckdb') }}"
       threads: 4

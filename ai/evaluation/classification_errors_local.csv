@@ -1,0 +1,47 @@
+comment_id,comment_text,language_human,language_model,sentiment_human,sentiment_model,theme_human,theme_model,product_human,product_model,is_spam_human,is_spam_model,language_match,sentiment_match,theme_match,product_match,is_spam_match
+C000360,"C'EST ENJAILLANT, NO DRAP À MARCORY",nouchi,fr,positive,negative,other,taste,none,unknown,False,False,False,False,False,False,True
+C001718,stock fini à Marcory zone 4 dèh à Riviera 3 ??,fr,fr,neutral,negative,availability,other,unknown,unknown,False,False,True,False,False,True,True
+C001721,la pub pendant le match était bien placée,fr,fr,positive,neutral,promotion,other,none,unknown,False,False,True,False,False,False,True
+C000239,la vidéo TikTok est drôle 😂 à Marcory,fr,fr,positive,neutral,promotion,other,none,unknown,False,False,True,False,False,False,True
+C002243,Boostez vos followers 📈 DM,fr,fr,neutral,negative,other,promotion,none,unknown,True,False,True,False,False,False,False
+C000769,la bouteille fuit un peu,fr,fr,negative,negative,packaging,other,unknown,unknown,False,False,True,True,False,True,True
+C001866,pourquoi il n'y a plus rien en rayon ? à Riviera 3,fr,fr,negative,negative,availability,availability,unknown,none,False,False,True,True,True,False,True
+C000919,svp le 33cl est parfait pour le bureau 👌,fr,fr,positive,positive,packaging,other,unknown,unknown,False,False,True,True,False,True,True
+C002597,meilleur bissap d'Abidjan wallah...,nouchi,fr,positive,positive,taste,taste,bissap,bissap,False,False,False,True,True,True,True
+C001439,commande annulée sans explication,fr,fr,negative,negative,delivery,other,none,unknown,False,False,True,True,False,False,True
+C001348,mon  frère c'est cher dèh ooh,nouchi,fr,negative,negative,price,price,unknown,unknown,False,False,False,True,True,True,True
+C002532,❤️❤️❤️,other,fr,positive,negative,other,other,none,unknown,False,False,False,False,True,False,True
+C001982,"c'est enjaillant, no drap à Yopougon",nouchi,fr,positive,negative,other,other,none,none,False,False,False,False,True,True,True
+C001195,"j'ai vu à la radio, j'ai testé, je ne regrette pas 🇨🇮",fr,fr,positive,neutral,promotion,other,none,none,False,False,True,False,False,True,True
+C001260,"j'ai vu à la radio, j'ai testé, je ne regrette pas",fr,fr,positive,neutral,promotion,other,none,unknown,False,False,True,False,False,False,True
+C001456,wê on veut le gingembre,nouchi,fr,neutral,negative,product_question,taste,gingembre,gingembre,False,False,False,False,False,True,True
+C002509,franchement quels sont les conservateurs dedans ?,fr,fr,neutral,negative,health,other,unknown,unknown,False,False,True,False,False,True,True
+C002331,le stand hier à Cocody 🔥 dégustation top,fr,fr,positive,positive,promotion,other,none,unknown,False,False,True,True,False,False,True
+C000974,"j'ai commandé sur WhatsApp, arrivé rapide 👍",fr,fr,positive,neutral,delivery,other,none,unknown,False,False,True,False,False,False,True
+C002483,rupture partout à Angré depuis 2 semaines 😤 à Bingerville,fr,fr,negative,negative,availability,other,unknown,unknown,False,False,True,True,False,True,True
+C001316,❤️❤️❤️,other,fr,positive,negative,other,other,none,unknown,False,False,False,False,True,False,True
+C000727,arrêtez les pubs trop répétitives svp,fr,fr,negative,negative,promotion,promotion,none,unknown,False,False,True,True,True,False,True
+C002549,"slt je prends 2 bouteilles chaque soir, top",fr,fr,positive,negative,taste,other,unknown,multiple,False,False,True,False,False,False,True
+C000242,l'étiquette se décolle au frigo,fr,fr,negative,negative,packaging,taste,unknown,bissap,False,False,True,True,False,False,True
+C001912,slt stock fini à Marcory zone 4 à Abobo,fr,fr,negative,negative,availability,other,unknown,unknown,False,False,True,True,False,True,True
+C002233,eh le bouye est doux paa 😋,nouchi,fr,positive,positive,taste,taste,bouye,bouye,False,False,False,True,True,True,True
+C001899,svp on ne trouve plus 😭 c'est fini ?,fr,fr,negative,negative,availability,service,unknown,unknown,False,False,True,True,False,True,True
+C000270,"vraiment bravo, c'est bien fait",fr,fr,positive,positive,other,taste,none,unknown,False,False,True,True,False,False,True
+C000501,Suis moi je te suis 🔙,fr,fr,neutral,negative,other,other,none,unknown,True,False,True,False,True,False,False
+C001673,eh votre stand à Yopougon était bien organisé à Yopougon,fr,fr,positive,neutral,promotion,promotion,none,unknown,False,False,True,False,True,False,True
+C002739,"j'ai vu à la radio, j'ai testé, je ne regrette pas",fr,fr,positive,neutral,promotion,other,none,unknown,False,False,True,False,False,False,True
+C001269,PRÊT D'ARGENT RAPIDE SANS GARANTIE contactez,fr,fr,neutral,negative,other,price,none,unknown,True,False,True,False,False,False,False
+C002291,le bouye est doux paa 😋,nouchi,fr,positive,positive,taste,taste,bouye,bouye,False,False,False,True,True,True,True
+C001107,rupture partout à Angré depuis 2 semaines 😤 😋,fr,fr,negative,negative,availability,other,unknown,unknown,False,False,True,True,False,True,True
+C000071,cé sucré comment ? il y a du sucre ajouté ? 🔥,nouchi,fr,neutral,negative,health,other,unknown,unknown,False,False,False,False,False,True,True
+C002472,trop cher pour la qualité désolé dèh à Yopougon 🥤,nouchi,fr,negative,negative,price,price,unknown,unknown,False,False,False,True,True,True,True
+C001692,"j'ai fait 3 boutiques, rien qui est comme moi ? 👏",fr,fr,positive,negative,other,other,unknown,unknown,False,False,True,False,True,True,True
+C000771,le 33cl est parfait pour le bureau 👌 hein à Angré,fr,fr,positive,positive,packaging,taste,unknown,bissap,False,False,True,True,False,False,True
+C002064,le gingembre est enjaillant dèh 🔥 😋!!!,nouchi,fr,positive,negative,taste,taste,gingembre,gingembre,False,False,False,False,True,True,True
+C000263,y a pas au maquis de Yopougon,fr,fr,negative,negative,availability,other,unknown,unknown,False,False,True,True,False,True,True
+C002035,"qualité au top, continuez comme ça 💪 mdr",fr,fr,positive,positive,taste,other,unknown,unknown,False,False,True,True,False,True,True
+C001368,@awale_ci vous avez une version sans sucre ?!!,fr,fr,neutral,negative,product_question,other,unknown,unknown,False,False,True,False,False,True,True
+C002139,c'est sucré comment ? il y a du sucre ajouté ? hein,fr,fr,neutral,neutral,health,taste,unknown,unknown,False,False,True,True,False,True,True
+C002022,le gingembre est enjaillant dèh 🔥 🇨🇮,nouchi,fr,positive,negative,taste,taste,gingembre,gingembre,False,False,False,False,True,True,True
+C001694,"plus de bissap dans mon quartier, c'est comment ?!!",fr,fr,negative,negative,availability,price,bissap,bissap,False,False,True,True,False,True,True
+C001930,the hibiscus one is great,en,fr,positive,positive,taste,taste,bissap,unknown,False,False,False,True,True,False,True

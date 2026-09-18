@@ -240,7 +240,7 @@ with col1:
 
     st.plotly_chart(
         fig,
-        use_container_width=True,
+        width='stretch',
     )
 
 with col2:
@@ -277,7 +277,7 @@ with col2:
     st.dataframe(
         display_allocation,
         hide_index=True,
-        use_container_width=True,
+        width='stretch',
         column_config={
             "channel": "Canal",
             "campaign_spend_fcfa": st.column_config.NumberColumn(
@@ -329,7 +329,7 @@ fig_sales = px.line(
 
 st.plotly_chart(
     fig_sales,
-    use_container_width=True,
+    width='stretch',
 )
 
 col1, col2 = st.columns(2)
@@ -348,7 +348,7 @@ with col1:
     st.dataframe(
         sales_table,
         hide_index=True,
-        use_container_width=True,
+        width='stretch',
     )
 
 with col2:
@@ -373,7 +373,7 @@ with col2:
     st.dataframe(
         coverage,
         hide_index=True,
-        use_container_width=True,
+        width='stretch',
     )
 
 
@@ -466,7 +466,7 @@ if social_available and not social.empty:
 
         st.plotly_chart(
             fig_sentiment,
-            use_container_width=True,
+            width='stretch',
         )
 
     with col2:
@@ -512,7 +512,7 @@ if social_available and not social.empty:
 
         st.plotly_chart(
             fig_themes,
-            use_container_width=True,
+            width='stretch',
         )
 
     # -----------------------------------------------------------------
@@ -552,7 +552,7 @@ if social_available and not social.empty:
         st.dataframe(
             products,
             hide_index=True,
-            use_container_width=True,
+            width='stretch',
         )
 
     with col2:
@@ -577,7 +577,7 @@ if social_available and not social.empty:
         st.dataframe(
             quality,
             hide_index=True,
-            use_container_width=True,
+            width='stretch',
         )
 
         st.caption(
@@ -627,10 +627,10 @@ with col2:
     )
     fig_recommendation.update_layout(xaxis_tickangle=-30, showlegend=False)
     fig_recommendation.update_traces(texttemplate="%{text:,.0f}", textposition="outside")
-    st.plotly_chart(fig_recommendation, use_container_width=True)
+    st.plotly_chart(fig_recommendation, width='stretch')
 
 st.dataframe(
-    recommendation_view, hide_index=True, use_container_width=True,
+    recommendation_view, hide_index=True, width='stretch',
     column_config={
         "channel": "Canal",
         "proposed_budget_fcfa": st.column_config.NumberColumn("Budget proposé (FCFA)", format="%.0f"),
@@ -649,7 +649,7 @@ with st.expander("Voir le contexte historique et la qualité de mesure"):
     for c in ["spend_share", "planned_share", "spend_vs_plan_ratio"]:
         if c in historical_view.columns:
             historical_view[c] = (historical_view[c] * 100).round(1)
-    st.dataframe(historical_view, hide_index=True, use_container_width=True, column_config={
+    st.dataframe(historical_view, hide_index=True, width='stretch', column_config={
         "channel": "Canal",
         "campaign_spend_fcfa": st.column_config.NumberColumn("Dépense historique (FCFA)", format="%.0f"),
         "spend_share": st.column_config.NumberColumn("Part dépense (%)", format="%.1f"),
