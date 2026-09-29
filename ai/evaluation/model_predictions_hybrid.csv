@@ -1,51 +1,109 @@
-comment_id,comment_text,language_model,sentiment_model,theme_model,product_model,is_spam_model,model_used,rules_complete,runtime_seconds,error
-C000360,"C'EST ENJAILLANT, NO DRAP À MARCORY",nouchi,positive,other,unknown,True,True,False,14.280527146998793,
-C001718,stock fini à Marcory zone 4 dèh à Riviera 3 ??,nouchi,negative,availability,unknown,False,True,False,12.190843589996803,
-C001721,la pub pendant le match était bien placée,en,neutral,promotion,unknown,False,True,False,11.235790107006324,
-C000551,c'est trop bon le bissap Awalé 😍,en,positive,taste,bissap,False,True,False,11.257254273994477,
-C000239,la vidéo TikTok est drôle 😂 à Marcory,en,positive,promotion,none,False,True,False,10.78634269000031,
-C002243,Boostez vos followers 📈 DM,en,positive,promotion,unknown,True,True,False,12.731079036995652,
-C000769,la bouteille fuit un peu,en,negative,packaging,bouye,False,True,False,12.717637347013806,
-C001866,pourquoi il n'y a plus rien en rayon ? à Riviera 3,en,negative,availability,bouye,True,True,False,11.577669873004197,
-C002550,mes  enfants adorent le bissap Awalé,en,positive,taste,bissap,False,True,False,10.709364777998417,
-C000919,svp le 33cl est parfait pour le bureau 👌,en,positive,packaging,unknown,False,True,False,10.090918646004866,
-C001124,mes enfants adorent le bissap Awalé,en,positive,taste,bissap,False,True,False,10.741374634002568,
-C002597,meilleur bissap d'Abidjan wallah...,nouchi,positive,taste,bissap,False,True,False,11.318395895999856,
-C001439,commande annulée sans explication,en,negative,delivery,unknown,False,True,False,11.604899465004564,
-C001348,mon  frère c'est cher dèh ooh,nouchi,negative,price,bouye,False,True,False,11.46405311000126,
-C002532,❤️❤️❤️,en,positive,taste,unknown,False,True,False,11.324396577998414,
-C001982,"c'est enjaillant, no drap à Yopougon",nouchi,positive,other,none,False,True,False,11.866509081999538,
-C001195,"j'ai vu à la radio, j'ai testé, je ne regrette pas 🇨🇮",en,positive,promotion,unknown,False,True,False,10.615475188998971,
-C001260,"j'ai vu à la radio, j'ai testé, je ne regrette pas",en,positive,promotion,none,False,True,False,11.180947237007786,
-C001456,wê on veut le gingembre,nouchi,negative,price,gingembre,False,True,False,11.341531682992354,
-C002509,franchement quels sont les conservateurs dedans ?,en,negative,health,unknown,False,True,False,11.452482690001489,
-C002331,le stand hier à Cocody 🔥 dégustation top,en,positive,promotion,unknown,False,True,False,11.324655655989773,
-C000974,"j'ai commandé sur WhatsApp, arrivé rapide 👍",en,positive,delivery,unknown,False,True,False,11.891487505999976,
-C002483,rupture partout à Angré depuis 2 semaines 😤 à Bingerville,en,negative,availability,bouye,False,True,False,11.479469193000114,
-C001316,❤️❤️❤️,en,positive,taste,unknown,False,True,False,11.406554148998111,
-C000727,arrêtez les pubs trop répétitives svp,en,negative,other,unknown,True,True,False,11.002527627002564,
-C002549,"slt je prends 2 bouteilles chaque soir, top",en,positive,packaging,bouye,False,True,False,11.29328609899676,
-C000242,l'étiquette se décolle au frigo,en,negative,packaging,bouye,False,True,False,10.924787515003118,
-C001912,slt stock fini à Marcory zone 4 à Abobo,en,negative,availability,unknown,False,True,False,10.981389002990909,
-C002233,eh le bouye est doux paa 😋,nouchi,positive,taste,bouye,False,True,False,10.615149040997494,
-C001899,svp on ne trouve plus 😭 c'est fini ?,en,negative,availability,unknown,True,True,False,10.87038743100129,
-C000270,"vraiment bravo, c'est bien fait",en,positive,taste,bouye,False,True,False,9.706228589988314,
-C000501,Suis moi je te suis 🔙,en,negative,other,none,True,True,False,10.45366042299429,
-C001673,eh votre stand à Yopougon était bien organisé à Yopougon,en,neutral,promotion,unknown,False,True,False,9.474507802005974,
-C002739,"j'ai vu à la radio, j'ai testé, je ne regrette pas",en,positive,promotion,none,False,True,False,10.03416109799582,
-C001269,PRÊT D'ARGENT RAPIDE SANS GARANTIE contactez,en,negative,price,unknown,True,True,False,11.403606424995814,
-C002291,le bouye est doux paa 😋,nouchi,positive,taste,bouye,False,True,False,9.962604918007855,
-C001107,rupture partout à Angré depuis 2 semaines 😤 😋,en,negative,availability,unknown,False,True,False,9.788280984997982,
-C000071,cé sucré comment ? il y a du sucre ajouté ? 🔥,en,positive,health,unknown,False,True,False,10.187855641008355,
-C002472,trop cher pour la qualité désolé dèh à Yopougon 🥤,nouchi,negative,price,unknown,False,True,False,10.42464674000803,
-C001457,le prix a encore monté ?,en,negative,price,unknown,False,True,False,10.227676907001296,
-C001692,"j'ai fait 3 boutiques, rien qui est comme moi ? 👏",en,positive,taste,bouye,False,True,False,10.449422231002245,
-C000771,le 33cl est parfait pour le bureau 👌 hein à Angré,en,positive,packaging,bouye,False,True,False,10.454893911999534,
-C002064,le gingembre est enjaillant dèh 🔥 😋!!!,nouchi,positive,taste,gingembre,False,True,False,9.988962798990542,
-C000263,y a pas au maquis de Yopougon,en,negative,availability,unknown,True,True,False,10.689466249008547,
-C002035,"qualité au top, continuez comme ça 💪 mdr",en,positive,other,none,False,True,False,10.358779133995995,
-C001368,@awale_ci vous avez une version sans sucre ?!!,en,negative,health,none,False,True,False,9.66302104499482,
-C002139,c'est sucré comment ? il y a du sucre ajouté ? hein,en,neutral,health,none,False,True,False,9.731317721001687,
-C002022,le gingembre est enjaillant dèh 🔥 🇨🇮,nouchi,positive,taste,gingembre,True,True,False,9.772778330996516,
-C001694,"plus de bissap dans mon quartier, c'est comment ?!!",en,negative,availability,bissap,False,True,False,10.538587229995755,
-C001930,the hibiscus one is great,en,positive,taste,bissap,False,True,False,10.014996794008766,
+comment_id,comment_text,language_model,sentiment_model,theme_model,product_model,is_spam_model,model_used,rules_complete,classifier_version
+C000360,"C'EST ENJAILLANT, NO DRAP À MARCORY",nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001718,stock fini à Marcory zone 4 dèh à Riviera 3 ??,nouchi,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001721,la pub pendant le match était bien placée,fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000551,c'est trop bon le bissap Awalé 😍,fr,positive,taste,bissap,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000239,la vidéo TikTok est drôle 😂 à Marcory,fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002243,Boostez vos followers 📈 DM,fr,neutral,other,none,True,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000769,la bouteille fuit un peu,fr,negative,packaging,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001866,pourquoi il n'y a plus rien en rayon ? à Riviera 3,fr,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002550,mes  enfants adorent le bissap Awalé,fr,positive,taste,bissap,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000919,svp le 33cl est parfait pour le bureau 👌,fr,positive,packaging,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001124,mes enfants adorent le bissap Awalé,fr,positive,taste,bissap,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002597,meilleur bissap d'Abidjan wallah...,nouchi,positive,taste,bissap,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001439,commande annulée sans explication,fr,negative,delivery,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001348,mon  frère c'est cher dèh ooh,nouchi,negative,price,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002532,❤️❤️❤️,other,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001982,"c'est enjaillant, no drap à Yopougon",nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001195,"j'ai vu à la radio, j'ai testé, je ne regrette pas 🇨🇮",fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001260,"j'ai vu à la radio, j'ai testé, je ne regrette pas",fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001456,wê on veut le gingembre,nouchi,neutral,product_question,gingembre,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002509,franchement quels sont les conservateurs dedans ?,fr,neutral,health,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002331,le stand hier à Cocody 🔥 dégustation top,fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000974,"j'ai commandé sur WhatsApp, arrivé rapide 👍",fr,positive,delivery,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002483,rupture partout à Angré depuis 2 semaines 😤 à Bingerville,fr,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001316,❤️❤️❤️,other,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000727,arrêtez les pubs trop répétitives svp,fr,negative,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002549,"slt je prends 2 bouteilles chaque soir, top",fr,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000242,l'étiquette se décolle au frigo,fr,negative,packaging,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001912,slt stock fini à Marcory zone 4 à Abobo,nouchi,negative,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002233,eh le bouye est doux paa 😋,nouchi,positive,taste,bouye,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001899,svp on ne trouve plus 😭 c'est fini ?,fr,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000270,"vraiment bravo, c'est bien fait",fr,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000501,Suis moi je te suis 🔙,fr,neutral,other,none,True,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001673,eh votre stand à Yopougon était bien organisé à Yopougon,fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002739,"j'ai vu à la radio, j'ai testé, je ne regrette pas",fr,positive,promotion,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001269,PRÊT D'ARGENT RAPIDE SANS GARANTIE contactez,fr,neutral,other,none,True,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002291,le bouye est doux paa 😋,nouchi,positive,taste,bouye,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001107,rupture partout à Angré depuis 2 semaines 😤 😋,fr,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000071,cé sucré comment ? il y a du sucre ajouté ? 🔥,nouchi,neutral,health,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002472,trop cher pour la qualité désolé dèh à Yopougon 🥤,nouchi,negative,price,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001457,le prix a encore monté ?,fr,negative,price,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001692,"j'ai fait 3 boutiques, rien qui est comme moi ? 👏",fr,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000771,le 33cl est parfait pour le bureau 👌 hein à Angré,fr,positive,packaging,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002064,le gingembre est enjaillant dèh 🔥 😋!!!,nouchi,positive,taste,gingembre,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000263,y a pas au maquis de Yopougon,fr,negative,availability,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002035,"qualité au top, continuez comme ça 💪 mdr",fr,positive,taste,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001368,@awale_ci vous avez une version sans sucre ?!!,fr,neutral,product_question,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002139,c'est sucré comment ? il y a du sucre ajouté ? hein,fr,neutral,health,unknown,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C002022,le gingembre est enjaillant dèh 🔥 🇨🇮,nouchi,positive,taste,gingembre,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001694,"plus de bissap dans mon quartier, c'est comment ?!!",fr,negative,availability,bissap,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001930,the hibiscus one is great,en,positive,taste,bissap,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000014,c'est gbé ça 😎 à Port-Bouët,nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000022,eh stock fini à Marcory zone 4 à Abobo,fr,negative,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000027,vu votre pub à la radio ce matin 📻 merci ❤️,fr,positive,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000039,prévoyez des packs de 6 pour les familles merci,fr,positive,packaging,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000045,le 33cl à 500 c'est correct mais le 1L non,fr,negative,price,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000057,stock fini à Marcory zone 4,fr,negative,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000063,"j'ai vu chez @miss_abj_lifestyle, je viens voir",fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000090,STOCK FINI À MARCORY ZONE 4 À TREICHVILLE 🥤,fr,negative,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000098,faut mettre à Adjamé aussi ooh ??,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000099,stock fini à Marcory zone 4 🇨🇮,fr,negative,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000109,faites un format 2L svp svp,fr,neutral,packaging,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000110,svp vu votre pub à la radio ce matin 📻,fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000111,le 33cl à 500 c'est correct mais le 1L non 😍!!,fr,negative,price,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000131,mais svp mettez dans les supermarchés de Cocody,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000138,svp  mettez dans les supermarchés de Cocody 😋,fr,positive,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000148,vs livrez à Bingerville ?,fr,neutral,delivery,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000155,"franchement j'ai vu chez @miss_abj_lifestyle, je viens voir",fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000175,faut mettre à Adjamé aussi ooh...,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000178,eh vu votre pub à la radio ce matin 📻 à Port-Bouët,fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000240,vu votre pub à la radio ce matin 📻 qui est comme moi ?,fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000271,the hibiscus one is great...,en,positive,taste,bissap,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000277,vu votre pub à la radio ce matin 📻 hein,fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000316,sincèrement vu votre pub à la radio ce matin 📻,fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000336,"j'ai vu chez @miss_abj_lifestyle, je viens voir à Plateau",fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000340,faites un format 2L svp!!!,fr,positive,packaging,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000347,le 33cl à 500 c'est correct mais le 1L non à Riviera 3 😒,fr,negative,price,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000348,le 33cl à 500 cé correct mais le 1L non à Angré,nouchi,negative,price,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000352,MAIS THE HIBISCUS ONE IS GREAT,mixed,positive,taste,bissap,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000353,mais prévoyez des packs de 6 pour les familles,fr,neutral,packaging,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000357,le 33cl à 500 c'est correct mais le 1L non 🙏,fr,negative,price,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000365,sincèrement le 33cl à 500 cé correct mais le 1L non,nouchi,negative,price,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000398,stock fini à Marcory zone 4 hein 😂,fr,negative,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000407,prévoyez des packs de 6 pour les familles,fr,neutral,packaging,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000439,svp mettez dans les supermarchés de Cocody,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000486,faites un format 2L svp 😋,fr,neutral,packaging,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000509,wê on veut le gingembre 😂,nouchi,positive,taste,gingembre,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000596,the hibiscus one is great 😩,en,positive,taste,bissap,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000600,@AWALE_CI SVP METTEZ DANS LES SUPERMARCHÉS DE COCODY,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000602,hey svp mettez dans les supermarchés de Cocody...,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000604,bon c'est gbé ça 😎 à Treichville 😩,nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000627,"j'ai  vu chez @miss_abj_lifestyle, je viens voir",fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000657,vs livrez à Bingerville ? 😂,fr,neutral,delivery,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000686,BONJOUR WÊ ON VEUT LE GINGEMBRE,nouchi,neutral,product_question,gingembre,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000707,c'est gbé ça 😎,nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000716,c'est gbé ça 😎 à Riviera 3 😩 ??,nouchi,positive,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000728,SLT C'EST GBÉ ÇA 😎 À YOPOUGON,nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000741,c'est gbé ça 😎 à Abobo,nouchi,positive,other,none,False,False,True,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000754,"J'AI VU CHEZ @MISS_ABJ_LIFESTYLE, JE VIENS VOIR À BINGERVILLE",fr,neutral,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000880,the hibiscus one is great 🙏,en,positive,taste,bissap,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C000990,bonjour  the hibiscus one is great dèh 🥤,nouchi,positive,taste,bissap,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001053,wê on veut le gingembre à Plateau,nouchi,neutral,product_question,gingembre,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001057,faut mettre à Adjamé aussi ooh 😍,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001105,hey wê on veut le gingembre à Port-Bouët,nouchi,neutral,product_question,gingembre,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001408,wê on veut le gingembre 😒,nouchi,positive,taste,gingembre,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001726,mais faut mettre à Adjamé aussi ooh,fr,neutral,availability,unknown,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001976,"vraiment bravo, c'est bien fait ??",fr,positive,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001992,"vraiment bravo, cé bien fait ??",nouchi,positive,promotion,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct
+C001997,faut mettre à Adjamé aussi ooh ooh ❤️,fr,neutral,other,none,False,True,False,rules-v4.2|comment_classifier_v4_hybrid@f47aabb40750|Qwen/Qwen2.5-0.5B-Instruct

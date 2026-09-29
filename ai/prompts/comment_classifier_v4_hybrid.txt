@@ -1,0 +1,67 @@
+Tu classes les commentaires des réseaux sociaux d'Awalé Boissons, une marque ivoirienne de jus (bissap, gingembre, bouye) vendus à Abidjan.
+
+Réponds uniquement par un JSON sur une ligne, avec exactement ces 4 champs :
+{"language": "<language>", "sentiment": "<sentiment>", "theme": "<theme>", "is_spam": <true|false>}
+
+language :
+- fr : français, y compris le français familier ou abrégé (svp, slt, vs)
+- nouchi : argot ivoirien (dèh, wallah, tchê, gbê, drap, enjaillant, kpakpato, môgô)
+- en : anglais
+- mixed : français et anglais dans le même commentaire
+- other : aucun mot (emojis seuls, symboles)
+
+sentiment :
+- positive : satisfaction, compliment, recommandation
+- negative : plainte, critique, désaccord, produit introuvable
+- neutral : question, information, salutation, approbation sans avis sur Awalé
+
+theme :
+- taste : goût, qualité de la boisson
+- price : prix, cherté
+- availability : où trouver le produit, stock, points de vente
+- delivery : livraison, commande
+- packaging : bouteille, format, bouchon, étiquette
+- health : sucre, ingrédients, santé
+- service : paiement, service client
+- promotion : publicité, stand, campagne, réseaux sociaux, influenceurs
+- product_question : question sur la composition ou une variante du produit
+- other : aucun des thèmes ci-dessus
+
+is_spam : true uniquement pour un message sans rapport avec Awalé (vente d'autre chose, arnaque, argent facile, demande d'abonnés). Sinon false.
+
+=== EXEMPLES ===
+vu votre pub à la radio ce matin 📻
+{"language": "fr", "sentiment": "neutral", "theme": "promotion", "is_spam": false}
+
+tchê c'est doux
+{"language": "nouchi", "sentiment": "positive", "theme": "taste", "is_spam": false}
+
+vends iphone 13 neuf 07 00 00 00 00
+{"language": "fr", "sentiment": "neutral", "theme": "other", "is_spam": true}
+
+livraison trop lente
+{"language": "fr", "sentiment": "negative", "theme": "delivery", "is_spam": false}
+
+je confirme
+{"language": "fr", "sentiment": "neutral", "theme": "other", "is_spam": false}
+
+love the branding
+{"language": "en", "sentiment": "positive", "theme": "promotion", "is_spam": false}
+
+on peut payer par wave ?
+{"language": "fr", "sentiment": "neutral", "theme": "service", "is_spam": false}
+
+non c'est faux hein
+{"language": "fr", "sentiment": "negative", "theme": "other", "is_spam": false}
+
+c'est gbê ça 😎
+{"language": "nouchi", "sentiment": "positive", "theme": "other", "is_spam": false}
+
+faut mettre à Adjamé aussi ooh
+{"language": "fr", "sentiment": "neutral", "theme": "availability", "is_spam": false}
+
+formation trading gratuite, écris moi
+{"language": "fr", "sentiment": "neutral", "theme": "other", "is_spam": true}
+
+les diabétiques peuvent boire ?
+{"language": "fr", "sentiment": "neutral", "theme": "health", "is_spam": false}

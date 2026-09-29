@@ -90,9 +90,27 @@ def test_prompt_is_a_versioned_file_and_is_what_the_script_uses(hybrid):
 
     assert prompt_file.parent == ROOT / "ai" / "prompts"
     assert prompt_file.exists()
-    assert hybrid.SYSTEM_PROMPT == prompt_file.read_text(encoding="utf-8")
-    assert "Retourne UNIQUEMENT un JSON valide" in hybrid.SYSTEM_PROMPT
-    assert hybrid.PROMPT_VERSION == "comment_classifier_v2_hybrid"
+    assert hybrid.PROMPT_TEXT == prompt_file.read_text(encoding="utf-8")
+    assert hybrid.SYSTEM_PROMPT in hybrid.PROMPT_TEXT
+    assert "JSON" in hybrid.SYSTEM_PROMPT
+    assert hybrid.PROMPT_VERSION == "comment_classifier_v4_hybrid"
+    assert hybrid.PROMPT_VERSION in hybrid.CLASSIFIER_VERSION
+
+
+def test_few_shot_examples_are_valid_and_never_taken_from_the_benchmark(hybrid):
+    """Un exemple copié du benchmark humain gonflerait artificiellement le score."""
+    examples = hybrid.FEW_SHOT_EXAMPLES
+    assert len(examples) >= 8
+
+    for text, answer in examples:
+        checked = hybrid.validate_model_prediction(hybrid.extract_json(answer))
+        assert checked["coerced"] == [], text
+
+    benchmark = pd.read_csv(ROOT / "ai" / "evaluation" / "labeled_sample.csv")
+    benchmark_texts = set(benchmark["comment_text"].map(hybrid.normalize_text))
+
+    for text, _ in examples:
+        assert hybrid.normalize_text(text) not in benchmark_texts, text
 
 
 # ---------------------------------------------------------------------------
@@ -210,11 +228,11 @@ def test_the_failed_comment_is_retried_at_the_next_run(hybrid, monkeypatch):
 # Garde-fou : vocabulaire fermé, remplacements jamais silencieux
 # ---------------------------------------------------------------------------
 
+# Le produit n'est jamais demandé au modèle (il est déduit par les règles).
 VALID = {
     "language": "fr",
     "sentiment": "positive",
     "theme": "taste",
-    "product": "bissap",
     "is_spam": False,
 }
 
@@ -262,3 +280,67 @@ def test_defaulted_answers_are_reported_at_the_end_of_the_run(hybrid, monkeypatc
     saved = read_output(hybrid)
     assert set(saved["language_model"]) == {"other"}
     assert "coerced" not in saved.columns   # la trace reste dans le journal, pas dans la donnée
+
+
+# ---------------------------------------------------------------------------
+# Règles déterministes et fusion
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "le prix a encore monté ?",          # "a" n'est pas un marqueur anglais
+        "svp on ne trouve plus c'est fini ?",  # "on" non plus
+        "belle campagne pour la CAN",        # ni "can"
+        "hey vous livrez sur Riviera 3 ?",   # ni "hey"
+    ],
+)
+def test_french_words_are_not_taken_for_english(hybrid, text):
+    assert hybrid.rule_language(text) == "fr"
+
+
+def test_rupture_is_detected_as_availability(hybrid):
+    assert hybrid.rule_theme("rupture partout à Angré") == "availability"
+
+
+def test_product_is_derived_from_theme_and_never_taken_from_the_model(hybrid):
+    model = {"language": "fr", "sentiment": "negative", "theme": "packaging",
+             "is_spam": False, "product": "bouye"}
+    no_product = {"language": "fr", "sentiment": None, "theme": None,
+                  "product": None, "is_spam": None}
+
+    assert hybrid.merge_prediction(no_product, model)["product"] == "unknown"
+    assert hybrid.merge_prediction(
+        no_product, {**model, "theme": "promotion"}
+    )["product"] == "none"
+    assert hybrid.merge_prediction(
+        {**no_product, "product": "bissap"}, model
+    )["product"] == "bissap"
+
+
+def test_emoji_only_comment_needs_no_model(hybrid):
+    rules = hybrid.deterministic_classification("❤️❤️❤️")
+
+    assert rules == {"language": "other", "sentiment": "positive",
+                     "theme": "other", "product": "none", "is_spam": False}
+    assert hybrid.is_complete(rules)
+
+
+def test_spam_has_no_opinion_theme_or_product(hybrid):
+    rules = hybrid.deterministic_classification("Boostez vos followers 📈 DM")
+
+    assert rules["is_spam"] is True
+    assert (rules["sentiment"], rules["theme"], rules["product"]) == ("neutral", "other", "none")
+
+
+def test_identical_texts_are_sent_to_the_model_once(hybrid, monkeypatch):
+    calls = []
+    install_model(hybrid, monkeypatch, calls)
+
+    outcomes = hybrid.classify_batch(
+        ["avis client numero 1", "AVIS CLIENT NUMERO 1 ", "avis client numero 2"],
+        None, None,
+    )
+
+    assert [t for batch in calls for t in batch] == ["avis client numero 1", "avis client numero 2"]
+    assert outcomes[0]["final"] == outcomes[1]["final"]

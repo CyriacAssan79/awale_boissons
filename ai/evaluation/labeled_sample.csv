@@ -1,6 +1,6 @@
 ﻿comment_id,platform,published_at,author_handle,comment_text,like_count,reply_to_id,language_human,sentiment_human,theme_human,product_human,is_spam_human,annotation_notes
 C000360,Instagram,2026-01-27 10:27:00,@mariam943,"C'EST ENJAILLANT, NO DRAP À MARCORY",1,,nouchi,positive,other,none,false,"Expression nouchi de satisfaction générale, sans thème produit précis."
-C001718,Facebook,2026-04-26 21:06:00,@serge654,stock fini à Marcory zone 4 dèh à Riviera 3 ??,5,,fr,neutral,availability,unknown,false,"Question sur rupture de stock dans deux zones, produit non précisé."
+C001718,Facebook,2026-04-26 21:06:00,@serge654,stock fini à Marcory zone 4 dèh à Riviera 3 ??,5,,nouchi,negative,availability,unknown,false,"Question sur rupture de stock dans deux zones, produit non précisé. Corrigé le 29/09/2026 (fr/neutral → nouchi/negative) : « dèh » est nouchi et les autres « stock fini » sont negative."
 C001721,Facebook,2026-04-26 14:00:00,@kevin5,la pub pendant le match était bien placée,7,,fr,positive,promotion,none,false,
 C000551,TikTok,2026-02-08 16:12:00,@chris451,c'est trop bon le bissap Awalé 😍,0,,fr,positive,taste,bissap,false,
 C000239,Instagram,2026-01-18 10:12:00,@kevin997,la vidéo TikTok est drôle 😂 à Marcory,0,,fr,positive,promotion,none,false,
@@ -39,7 +39,7 @@ C001107,Facebook,2026-03-14 13:57:00,@junior314,rupture partout à Angré depuis
 C000071,Facebook,2026-01-06 17:19:00,@bakary318,cé sucré comment ? il y a du sucre ajouté ? 🔥,4,,nouchi,neutral,health,unknown,false,
 C002472,Instagram,2026-06-20 14:14:00,@junior18,trop cher pour la qualité désolé dèh à Yopougon 🥤,1,,nouchi,negative,price,unknown,false,
 C001457,TikTok,2026-04-07 23:41:00,@didi321,le prix a encore monté ?,4,,fr,negative,price,unknown,false,
-C001692,TikTok,2026-04-24 19:26:00,@kone.950,"j'ai fait 3 boutiques, rien qui est comme moi ? 👏",9,,fr,positive,other,unknown,false,"Formulation peu claire (« rien qui est comme moi »), lu comme un compliment vu l'emoji 👏."
+C001692,TikTok,2026-04-24 19:26:00,@kone.950,"j'ai fait 3 boutiques, rien qui est comme moi ? 👏",9,,fr,negative,availability,unknown,false,"Formulation peu claire (« rien qui est comme moi »). Corrigé le 29/09/2026 (positive/other → negative/availability) : « j'ai fait 3 boutiques, rien » = produit introuvable ; « qui est comme moi » et 👏 sont du bruit ajouté ailleurs dans le corpus."
 C000771,Instagram,2026-02-21 11:47:00,@awa_90,le 33cl est parfait pour le bureau 👌 hein à Angré,9,,fr,positive,packaging,unknown,false,Doublon quasi identique de C000919.
 C002064,TikTok,2026-05-22 12:03:00,@awa_887,le gingembre est enjaillant dèh 🔥 😋!!!,1,,nouchi,positive,taste,gingembre,false,
 C000263,Facebook,2026-01-21 07:54:00,@awa_619,y a pas au maquis de Yopougon,2,,fr,negative,availability,unknown,false,
@@ -49,3 +49,61 @@ C002139,Facebook,2026-05-28 11:54:00,@ibrahim522,c'est sucré comment ? il y a d
 C002022,Instagram,2026-05-18 08:17:00,@fatou308,le gingembre est enjaillant dèh 🔥 🇨🇮,1,,nouchi,positive,taste,gingembre,false,Doublon quasi identique de C002064.
 C001694,TikTok,2026-04-24 11:56:00,@stephane953,"plus de bissap dans mon quartier, c'est comment ?!!",0,,fr,negative,availability,bissap,false,
 C001930,Instagram,2026-05-12 15:19:00,@chris592,the hibiscus one is great,5,,en,positive,taste,bissap,false,« Hibiscus » désigne le bissap.
+C000014,Facebook,2026-01-01 07:00:00,@ibrahim842,c'est gbé ça 😎 à Port-Bouët,2,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi d'approbation.
+C000022,Facebook,2026-01-02 16:59:00,@bakary954,eh stock fini à Marcory zone 4 à Abobo,6,,fr,negative,availability,unknown,false,"Validé humainement — Rupture, cohérent avec les autres « stock fini » du benchmark."
+C000027,Facebook,2026-01-03 11:18:00,@kone.417,vu votre pub à la radio ce matin 📻 merci ❤️,0,,fr,positive,promotion,none,false,"Validé humainement — Constat de la pub, sans avis (merci / emojis = bruit)."
+C000039,Facebook,2026-01-03 15:29:00,@abou168,prévoyez des packs de 6 pour les familles merci,3,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
+C000045,Facebook,2026-01-04 23:16:00,@awa_638,le 33cl à 500 c'est correct mais le 1L non,3,,fr,negative,price,unknown,false,"Validé humainement — Le 33cl à 500 est correct, le prix du 1L ne l'est pas : plainte sur le prix."
+C000057,TikTok,2026-01-05 14:19:00,@didi919,stock fini à Marcory zone 4,0,,fr,negative,availability,unknown,false,"Validé humainement — Rupture, cohérent avec les autres « stock fini » du benchmark."
+C000063,Facebook,2026-01-05 19:58:00,@aicha_137,"j'ai vu chez @miss_abj_lifestyle, je viens voir",3,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
+C000090,TikTok,2026-01-07 16:29:00,@stephane8,STOCK FINI À MARCORY ZONE 4 À TREICHVILLE 🥤,0,,fr,negative,availability,unknown,false,"Validé humainement — Rupture, cohérent avec les autres « stock fini » du benchmark."
+C000098,Instagram,2026-01-08 20:58:00,@awa_611,faut mettre à Adjamé aussi ooh ??,17,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."
+C000099,Instagram,2026-01-08 16:47:00,@stephane233,stock fini à Marcory zone 4 🇨🇮,0,,fr,negative,availability,unknown,false,"Validé humainement — Rupture, cohérent avec les autres « stock fini » du benchmark."
+C000109,TikTok,2026-01-09 08:00:00,@aya656,faites un format 2L svp svp,5,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
+C000110,Instagram,2026-01-09 11:55:00,@traore887,svp vu votre pub à la radio ce matin 📻,6,,fr,neutral,promotion,none,false,"Validé humainement — Constat de la pub, sans avis (merci / emojis = bruit)."
+C000111,Instagram,2026-01-09 19:46:00,@mimi479,le 33cl à 500 c'est correct mais le 1L non 😍!!,8,,fr,negative,price,unknown,false,"Validé humainement — Le 33cl à 500 est correct, le prix du 1L ne l'est pas : plainte sur le prix."
+C000131,Facebook,2026-01-10 07:47:00,@abou8,mais svp mettez dans les supermarchés de Cocody,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
+C000138,Instagram,2026-01-10 10:50:00,@aya155,svp  mettez dans les supermarchés de Cocody 😋,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
+C000148,Facebook,2026-01-11 20:04:00,@abou111,vs livrez à Bingerville ?,9,,fr,neutral,delivery,none,false,Validé humainement — Question sur la livraison.
+C000155,Facebook,2026-01-12 09:37:00,@nadege13,"franchement j'ai vu chez @miss_abj_lifestyle, je viens voir",6,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
+C000175,Instagram,2026-01-14 22:08:00,@nadege621,faut mettre à Adjamé aussi ooh...,6,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."
+C000178,Facebook,2026-01-14 10:31:00,@fatou520,eh vu votre pub à la radio ce matin 📻 à Port-Bouët,1,,fr,neutral,promotion,none,false,"Validé humainement — Constat de la pub, sans avis (merci / emojis = bruit)."
+C000240,Instagram,2026-01-19 15:38:00,@mimi289,vu votre pub à la radio ce matin 📻 qui est comme moi ?,1,,fr,neutral,promotion,none,false,"Validé humainement — Constat de la pub, sans avis (merci / emojis = bruit)."
+C000271,Instagram,2026-01-21 20:21:00,@abou107,the hibiscus one is great...,0,,en,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
+C000277,Instagram,2026-01-21 10:19:00,@fatou469,vu votre pub à la radio ce matin 📻 hein,10,,fr,neutral,promotion,none,false,"Validé humainement — Constat de la pub, sans avis (merci / emojis = bruit)."
+C000316,TikTok,2026-01-24 21:44:00,@rita869,sincèrement vu votre pub à la radio ce matin 📻,5,,fr,neutral,promotion,none,false,"Validé humainement — Constat de la pub, sans avis (merci / emojis = bruit)."
+C000336,Instagram,2026-01-25 23:57:00,@aicha_290,"j'ai vu chez @miss_abj_lifestyle, je viens voir à Plateau",17,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
+C000340,Facebook,2026-01-25 10:06:00,@mariam283,faites un format 2L svp!!!,7,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
+C000347,TikTok,2026-01-26 18:14:00,@serge558,le 33cl à 500 c'est correct mais le 1L non à Riviera 3 😒,1,,fr,negative,price,unknown,false,"Validé humainement — Le 33cl à 500 est correct, le prix du 1L ne l'est pas : plainte sur le prix."
+C000348,Instagram,2026-01-26 11:02:00,@mariam410,le 33cl à 500 cé correct mais le 1L non à Angré,1,,nouchi,negative,price,unknown,false,"Validé humainement — Le 33cl à 500 est correct, le prix du 1L ne l'est pas : plainte sur le prix."
+C000352,Instagram,2026-01-26 17:01:00,@abou989,MAIS THE HIBISCUS ONE IS GREAT,7,,mixed,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
+C000353,Instagram,2026-01-26 17:46:00,@abou778,mais prévoyez des packs de 6 pour les familles,0,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
+C000357,TikTok,2026-01-27 21:25:00,@nadege14,le 33cl à 500 c'est correct mais le 1L non 🙏,2,,fr,negative,price,unknown,false,"Validé humainement — Le 33cl à 500 est correct, le prix du 1L ne l'est pas : plainte sur le prix."
+C000365,Facebook,2026-01-27 09:01:00,@abou610,sincèrement le 33cl à 500 cé correct mais le 1L non,10,,nouchi,negative,price,unknown,false,"Validé humainement — Le 33cl à 500 est correct, le prix du 1L ne l'est pas : plainte sur le prix."
+C000398,Instagram,2026-01-29 15:02:00,@traore445,stock fini à Marcory zone 4 hein 😂,4,,fr,negative,availability,unknown,false,"Validé humainement — Rupture, cohérent avec les autres « stock fini » du benchmark."
+C000407,Facebook,2026-01-29 18:35:00,@abou808,prévoyez des packs de 6 pour les familles,0,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
+C000439,Instagram,2026-02-01 09:03:00,@kevin106,svp mettez dans les supermarchés de Cocody,13,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
+C000486,Facebook,2026-02-04 09:41:00,@mimi229,faites un format 2L svp 😋,10,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
+C000509,Instagram,2026-02-05 15:45:00,@mimi188,wê on veut le gingembre 😂,1,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C000596,Facebook,2026-02-11 09:42:00,@kone.55,the hibiscus one is great 😩,1,,en,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
+C000600,Facebook,2026-02-11 11:17:00,@yao94,@AWALE_CI SVP METTEZ DANS LES SUPERMARCHÉS DE COCODY,2,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
+C000602,Instagram,2026-02-11 23:49:00,@aya200,hey svp mettez dans les supermarchés de Cocody...,1,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
+C000604,TikTok,2026-02-12 14:08:00,@stephane732,bon c'est gbé ça 😎 à Treichville 😩,1,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi d'approbation.
+C000627,Facebook,2026-02-13 23:43:00,@chris544,"j'ai  vu chez @miss_abj_lifestyle, je viens voir",3,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
+C000657,Instagram,2026-02-15 17:43:00,@junior355,vs livrez à Bingerville ? 😂,12,,fr,neutral,delivery,none,false,Validé humainement — Question sur la livraison.
+C000686,Facebook,2026-02-16 13:01:00,@nadege884,BONJOUR WÊ ON VEUT LE GINGEMBRE,0,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C000707,Instagram,2026-02-18 10:40:00,@serge415,c'est gbé ça 😎,0,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
+C000716,Facebook,2026-02-18 11:55:00,@ibrahim999,c'est gbé ça 😎 à Riviera 3 😩 ??,3,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
+C000728,Instagram,2026-02-19 20:01:00,@chris825,SLT C'EST GBÉ ÇA 😎 À YOPOUGON,17,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
+C000741,Facebook,2026-02-20 22:35:00,@chris311,c'est gbé ça 😎 à Abobo,0,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
+C000754,Facebook,2026-02-20 21:22:00,@yao195,"J'AI VU CHEZ @MISS_ABJ_LIFESTYLE, JE VIENS VOIR À BINGERVILLE",0,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
+C000880,Facebook,2026-02-27 18:39:00,@fatou638,the hibiscus one is great 🙏,3,,en,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
+C000990,Facebook,2026-03-07 07:06:00,@aicha_591,bonjour  the hibiscus one is great dèh 🥤,0,,mixed,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
+C001053,Instagram,2026-03-11 22:27:00,@mariam341,wê on veut le gingembre à Plateau,8,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C001057,Instagram,2026-03-11 08:00:00,@aya38,faut mettre à Adjamé aussi ooh 😍,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."
+C001105,Instagram,2026-03-14 17:36:00,@mariam836,hey wê on veut le gingembre à Port-Bouët,2,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C001408,Facebook,2026-04-03 21:08:00,@traore263,wê on veut le gingembre 😒,0,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C001726,Facebook,2026-04-26 07:20:00,@aya69,mais faut mettre à Adjamé aussi ooh,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."
+C001976,Instagram,2026-05-15 23:04:00,@aya839,"vraiment bravo, c'est bien fait ??",1,,fr,positive,other,none,false,"Validé humainement — Aligné sur « vraiment bravo, c'est bien fait » du benchmark."
+C001992,Facebook,2026-05-16 11:17:00,@kone.123,"vraiment bravo, cé bien fait ??",9,,nouchi,positive,other,none,false,"Validé humainement — Aligné sur « vraiment bravo, c'est bien fait » du benchmark."
+C001997,TikTok,2026-05-16 16:36:00,@nadege290,faut mettre à Adjamé aussi ooh ooh ❤️,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."

@@ -330,7 +330,29 @@ Constat : dbt/DuckDB ne coûtent quasiment rien (~35 s cumulées, mesurées) —
 cycle mensuel vient de l'IA (~45 min) et de la revue humaine (25 min, non compressible).
 `classify_comments_hybrid.py` est incrémental : il ne classe que les `comment_id` absents de
 `ai/evaluation/social_comments_predictions_v2_full.csv` (validé deux fois : retrait de 15 puis de
-10 commentaires, relance, résultats bit-à-bit identiques aux prédictions d'origine). Piste
+10 commentaires, relance, résultats bit-à-bit identiques aux prédictions d'origine). Chaque ligne
+porte une colonne `classifier_version` (règles + prompt + modèle) : après un changement de
+version, les anciennes lignes sont sauvegardées dans un fichier `.backup_<date>.csv` puis reclassées.
+
+Avant un run complet :
+
+```bash
+python ai/classify_comments_hybrid.py --test 10   # 10 commentaires annotés, détail règle/Qwen/humain
+python ai/classify_comments_hybrid.py --bench     # 50 commentaires annotés → model_predictions_hybrid.csv
+python ai/evaluation/evaluate_classifier.py --model hybrid
+python ai/classify_comments_hybrid.py             # run complet (appelé par run_pipeline.py)
+```
+
+`ai/evaluation/labeled_sample_draft.csv` contient des commentaires que les règles ne tranchent
+pas (ils partent au modèle), avec des labels **proposés**. Après relecture humaine (colonne
+`validated` = `oui`), les fusionner dans le benchmark :
+
+```bash
+python ai/evaluation/merge_validated_draft.py            # aperçu
+python ai/evaluation/merge_validated_draft.py --apply    # ajoute les lignes validées à labeled_sample.csv
+```
+
+Piste
 restante pour repasser sous l'heure : réduire `max_new_tokens` ou augmenter `BATCH_SIZE` côté
 modèle — non implémenté.
 
