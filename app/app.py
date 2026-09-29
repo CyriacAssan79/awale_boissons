@@ -671,6 +671,7 @@ if social_available and not social.empty:
                     "health_comments_count": "Santé",
                     "delivery_comments_count": "Livraison",
                     "service_comments_count": "Service",
+                    "product_question_comments_count": "Question produit",
                     "other_theme_comments_count": "Autre",
                 },
                 "theme",

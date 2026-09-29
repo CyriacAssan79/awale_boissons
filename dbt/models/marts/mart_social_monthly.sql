@@ -94,6 +94,11 @@ monthly AS (
         ) AS service_comments_count,
 
         COUNT(*) FILTER (
+            WHERE theme_model = 'product_question'
+            AND is_spam_model = false
+        ) AS product_question_comments_count,
+
+        COUNT(*) FILTER (
             WHERE theme_model = 'other'
             AND is_spam_model = false
         ) AS other_theme_comments_count,

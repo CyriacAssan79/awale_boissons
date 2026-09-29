@@ -125,7 +125,7 @@ metriques:
     attendu: {entre: [0, 1]}
     precautions:
       - Cette expression donne la part de commentaires NÉGATIFS parmi les commentaires non-spam. Positifs et neutres : mêmes colonnes positive_comments_count et neutral_comments_count.
-      - Classification par un modèle local évalué sur 50 commentaires : lire les signaux (direction), pas les valeurs exactes. La détection de spam est à améliorer.
+      - Classification hybride V4 (règles déterministes + modèle local pour ~13 % des commentaires), évaluée sur un benchmark humain de 108 commentaires (accord exact 85 %, sentiment 95 %) : lire les signaux (direction), pas les valeurs exactes.
 
   taux_reachat_livraison:
     libelle: Taux de réachat livraison

@@ -17,7 +17,7 @@ C002532,TikTok,2026-06-25 11:53:00,@bakary48,❤️❤️❤️,5,,other,positiv
 C001982,Instagram,2026-05-15 19:52:00,@stephane795,"c'est enjaillant, no drap à Yopougon",1,,nouchi,positive,other,none,false,
 C001195,TikTok,2026-03-20 13:13:00,@didi389,"j'ai vu à la radio, j'ai testé, je ne regrette pas 🇨🇮",0,,fr,positive,promotion,none,false,Mentionne la radio comme canal déclencheur d'achat.
 C001260,Facebook,2026-03-24 09:09:00,@ibrahim115,"j'ai vu à la radio, j'ai testé, je ne regrette pas",4,,fr,positive,promotion,none,false,Doublon quasi identique de C001195.
-C001456,Instagram,2026-04-07 07:44:00,@rita754,wê on veut le gingembre,5,,nouchi,neutral,product_question,gingembre,false,Demande/souhait plutôt qu'avis tranché.
+C001456,Instagram,2026-04-07 07:44:00,@rita754,wê on veut le gingembre,5,,nouchi,neutral,availability,gingembre,false,"Demande/souhait plutôt qu'avis tranché. Corrigé le 29/09/2026 (product_question → availability) : harmonisé avec les variantes validées de la même phrase."
 C002509,Facebook,2026-06-23 18:38:00,@stephane611,franchement quels sont les conservateurs dedans ?,1,,fr,neutral,health,unknown,false,
 C002331,Facebook,2026-06-11 23:34:00,@didi662,le stand hier à Cocody 🔥 dégustation top,1,,fr,positive,promotion,none,false,Événement/dégustation à Cocody.
 C000974,Instagram,2026-03-06 23:58:00,@abou444,"j'ai commandé sur WhatsApp, arrivé rapide 👍",1,,fr,positive,delivery,none,false,
@@ -84,14 +84,14 @@ C000398,Instagram,2026-01-29 15:02:00,@traore445,stock fini à Marcory zone 4 he
 C000407,Facebook,2026-01-29 18:35:00,@abou808,prévoyez des packs de 6 pour les familles,0,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
 C000439,Instagram,2026-02-01 09:03:00,@kevin106,svp mettez dans les supermarchés de Cocody,13,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
 C000486,Facebook,2026-02-04 09:41:00,@mimi229,faites un format 2L svp 😋,10,,fr,neutral,packaging,unknown,false,"Validé humainement — Suggestion de format, sans avis."
-C000509,Instagram,2026-02-05 15:45:00,@mimi188,wê on veut le gingembre 😂,1,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C000509,Instagram,2026-02-05 15:45:00,@mimi188,wê on veut le gingembre 😂,1,,nouchi,neutral,availability,gingembre,false,Validé humainement — Demande que le gingembre soit disponible (neutral / availability) comme C001456.
 C000596,Facebook,2026-02-11 09:42:00,@kone.55,the hibiscus one is great 😩,1,,en,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
 C000600,Facebook,2026-02-11 11:17:00,@yao94,@AWALE_CI SVP METTEZ DANS LES SUPERMARCHÉS DE COCODY,2,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
 C000602,Instagram,2026-02-11 23:49:00,@aya200,hey svp mettez dans les supermarchés de Cocody...,1,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de points de vente, sans avis."
 C000604,TikTok,2026-02-12 14:08:00,@stephane732,bon c'est gbé ça 😎 à Treichville 😩,1,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi d'approbation.
 C000627,Facebook,2026-02-13 23:43:00,@chris544,"j'ai  vu chez @miss_abj_lifestyle, je viens voir",3,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
 C000657,Instagram,2026-02-15 17:43:00,@junior355,vs livrez à Bingerville ? 😂,12,,fr,neutral,delivery,none,false,Validé humainement — Question sur la livraison.
-C000686,Facebook,2026-02-16 13:01:00,@nadege884,BONJOUR WÊ ON VEUT LE GINGEMBRE,0,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C000686,Facebook,2026-02-16 13:01:00,@nadege884,BONJOUR WÊ ON VEUT LE GINGEMBRE,0,,nouchi,neutral,availability,gingembre,false,Validé humainement — Demande que le gingembre soit disponible (neutral / availability) comme C001456.
 C000707,Instagram,2026-02-18 10:40:00,@serge415,c'est gbé ça 😎,0,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
 C000716,Facebook,2026-02-18 11:55:00,@ibrahim999,c'est gbé ça 😎 à Riviera 3 😩 ??,3,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
 C000728,Instagram,2026-02-19 20:01:00,@chris825,SLT C'EST GBÉ ÇA 😎 À YOPOUGON,17,,nouchi,positive,other,none,false,Validé humainement — « c'est gbê ça » = expression nouchi pour dire que c'est remplie.
@@ -99,10 +99,10 @@ C000741,Facebook,2026-02-20 22:35:00,@chris311,c'est gbé ça 😎 à Abobo,0,,n
 C000754,Facebook,2026-02-20 21:22:00,@yao195,"J'AI VU CHEZ @MISS_ABJ_LIFESTYLE, JE VIENS VOIR À BINGERVILLE",0,,fr,neutral,promotion,none,false,"Validé humainement — Venu via une influenceuse : promotion, pas d'avis exprimé."
 C000880,Facebook,2026-02-27 18:39:00,@fatou638,the hibiscus one is great 🙏,3,,en,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
 C000990,Facebook,2026-03-07 07:06:00,@aicha_591,bonjour  the hibiscus one is great dèh 🥤,0,,mixed,positive,taste,bissap,false,Validé humainement — Compliment sur le goût du bissap (hibiscus).
-C001053,Instagram,2026-03-11 22:27:00,@mariam341,wê on veut le gingembre à Plateau,8,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C001053,Instagram,2026-03-11 22:27:00,@mariam341,wê on veut le gingembre à Plateau,8,,nouchi,neutral,availability,gingembre,false,Validé humainement — Demande que le gingembre soit disponible (neutral / availability) comme C001456.
 C001057,Instagram,2026-03-11 08:00:00,@aya38,faut mettre à Adjamé aussi ooh 😍,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."
-C001105,Instagram,2026-03-14 17:36:00,@mariam836,hey wê on veut le gingembre à Port-Bouët,2,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
-C001408,Facebook,2026-04-03 21:08:00,@traore263,wê on veut le gingembre 😒,0,,nouchi,neutral,availability,gingembre,false,Validé humainement — Aligné sur « wê on veut le gingembre » du benchmark (neutral / product_question).
+C001105,Instagram,2026-03-14 17:36:00,@mariam836,hey wê on veut le gingembre à Port-Bouët,2,,nouchi,neutral,availability,gingembre,false,Validé humainement — Demande que le gingembre soit disponible (neutral / availability) comme C001456.
+C001408,Facebook,2026-04-03 21:08:00,@traore263,wê on veut le gingembre 😒,0,,nouchi,neutral,availability,gingembre,false,Validé humainement — Demande que le gingembre soit disponible (neutral / availability) comme C001456.
 C001726,Facebook,2026-04-26 07:20:00,@aya69,mais faut mettre à Adjamé aussi ooh,0,,fr,neutral,availability,unknown,false,"Validé humainement — Demande de point de vente, aligné sur l'exemple du prompt."
 C001976,Instagram,2026-05-15 23:04:00,@aya839,"vraiment bravo, c'est bien fait ??",1,,fr,positive,other,none,false,"Validé humainement — Aligné sur « vraiment bravo, c'est bien fait » du benchmark."
 C001992,Facebook,2026-05-16 11:17:00,@kone.123,"vraiment bravo, cé bien fait ??",9,,nouchi,positive,other,none,false,"Validé humainement — Aligné sur « vraiment bravo, c'est bien fait » du benchmark."

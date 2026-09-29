@@ -1,4 +1,5 @@
 comment_id,comment_text,language_human,language_model,sentiment_human,sentiment_model,theme_human,theme_model,product_human,product_model,is_spam_human,is_spam_model,language_match,sentiment_match,theme_match,product_match,is_spam_match
+C001456,wê on veut le gingembre,nouchi,nouchi,neutral,neutral,availability,product_question,gingembre,gingembre,False,False,True,True,False,True,True
 C002549,"slt je prends 2 bouteilles chaque soir, top",fr,fr,positive,positive,taste,other,unknown,none,False,False,True,True,False,False,True
 C001912,slt stock fini à Marcory zone 4 à Abobo,fr,nouchi,negative,negative,availability,availability,unknown,unknown,False,False,False,True,True,True,True
 C000039,prévoyez des packs de 6 pour les familles merci,fr,fr,neutral,positive,packaging,packaging,unknown,unknown,False,False,True,False,True,True,True
