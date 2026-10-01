@@ -15,6 +15,8 @@ Le pipeline répond à quatre questions :
 3. Que dit la Customer Voice ?
 4. Que tester avec les prochains 15 M FCFA ?
 
+Chaque mois, ces réponses sont aussi rassemblées dans un **rapport mensuel** rédigé en français courant (voir 7 bis).
+
 ## 3. Architecture
 
 ```
@@ -25,12 +27,12 @@ RAW → STAGING → INTERMEDIATE → MARTS → DECISION → DASHBOARD
 - **STAGING** : nettoyage / déduplication / normalisation / quality flags
 - **INTERMEDIATE** : réconciliation / calendrier / parsing / enrichissement
 - **MARTS** : Marketing / Sales / WhatsApp / Social / Decision
-- **AI + Decision Layer**
-- **Streamlit Dashboard**
+- **AI + Decision Layer** : classification des commentaires (Customer Voice) et rapport mensuel
+- **Streamlit Dashboard** : 6 pages accessibles depuis une barre de navigation, dont le rapport mensuel
 
 ## 4. Stack technique
 
-Python 3.13 ou 3.14 (versions épinglées dans `requirements.txt`) · pandas · DuckDB · dbt Core + dbt-duckdb · openpyxl · modèle local + règles hybrides · Streamlit · Plotly · dbt tests.
+Python 3.13 ou 3.14 (versions épinglées dans `requirements.txt`) · pandas · DuckDB · dbt Core + dbt-duckdb · openpyxl · modèles locaux Qwen2.5 (0.5B pour les commentaires, 1.5B pour le rapport) + règles hybrides · Streamlit · Plotly · dbt tests.
 
 ## 5. Sources
 
@@ -73,6 +75,36 @@ Les commentaires sont enrichis avec `language`, `sentiment`, `theme`, `product` 
 | Exact agreement | 8%  | 14%       |
 
 **À lire avec les taux de référence.** Sur ces 50 commentaires, une réponse constante donnerait 72 % en langue, 54 % en sentiment, 22 % en thème, 42 % en produit et 94 % en spam. V1 n'égale que ces taux sur langue, sentiment et spam ; la version hybride progresse sur sentiment, thème et produit mais reste très en dessous en langue (22 % contre 72 %). L'échantillon ne compte que 3 spams. Le champ langue n'est pas utilisable en l'état et la détection de spam est à améliorer : le remplacement du modèle local est prévu (voir `docs/ai_documentation.ipynb` 5).
+
+## 7 bis. IA — Rapport mensuel
+
+La page **Rapport IA** du dashboard (et la commande `python -m ai.reporting.generate_report`) produit le bilan d'un mois : synthèse, ventes, dépenses marketing, voix du client, produits, commandes WhatsApp, points d'attention, points positifs et conclusion.
+
+```
+marts DuckDB → query_marts.py (brief chiffré) → build_deterministic_report.py (sections chiffrées)
+                                             → constats qualitatifs → Qwen2.5-1.5B (synthèse + conclusion) → contrôles → rapport
+```
+
+- **Les chiffres ne passent jamais par le modèle.** `ai/reporting/query_marts.py` calcule tout le brief en SQL/Python ; `build_deterministic_report.py` écrit les sections chiffrées.
+- **Le modèle `Qwen/Qwen2.5-1.5B-Instruct` ne rédige que la synthèse et la conclusion**, à partir de constats qualitatifs sans aucun chiffre (« Le chiffre d'affaires est en baisse par rapport à la période précédente. », « Meta représente la plus grande part des dépenses marketing. », « Le bissap en format un litre… »). Les noms de canal et de produit sont transmis en toutes lettres : sans eux, le modèle écrivait « le canal » ou « le produit » et la phrase semblait incomplète.
+- **Sa sortie est contrôlée** (`validate_narrative`) avant affichage. Elle est rejetée si elle contient :
+  - un chiffre ou un `%` ;
+  - une formulation causale (« grâce à », « à cause de »…) ;
+  - une mention de l'enveloppe de 15 M FCFA ;
+  - une phrase sans article (style télégraphique) ;
+  - un sens d'évolution du CA contraire au calcul (par exemple « inférieur » alors que le mois précédent n'existe pas).
+
+  Une sortie rejetée est remplacée par une **synthèse de secours** qui reprend les constats tels quels. Une faute d'accord récurrente du modèle (« certains commandes ») est corrigée automatiquement.
+- **Ce que le contrôle ne garantit pas** : un modèle de cette taille peut encore reformuler un constat de façon maladroite. Relire la synthèse et la conclusion avant diffusion.
+- Les rapports sont enregistrés dans `outputs/reports/rapport_AAAA_MM.md` et téléchargeables depuis le dashboard.
+
+**Durées mesurées (CPU, 01/10/2026)** :
+
+- chargement du modèle : ~12 s si le modèle est déjà dans le cache local, ~70–80 s sinon (une fois par session du dashboard) ;
+- génération : **~1 min 50 à 2 min 10 par mois** (mesuré sur avril, mai et juin) ;
+- sans synthèse IA (interrupteur désactivé) : instantané.
+
+Avril, mai et juin passent les contrôles. Janvier bascule sur la synthèse de secours : le modèle y invente une évolution du CA alors que décembre 2025 n'est pas dans les données.
 
 ## 8. Customer Voice — janvier à juin 2026
 
@@ -214,7 +246,8 @@ d'aucune clé API : `openai`, `tenacity` et `python-dotenv` ne servent qu'à la 
 la classification (`ai/classify_comments.py`, non retenue) et sont dans `requirements-dev.txt`.
 
 Première inférence IA : le modèle `Qwen/Qwen2.5-0.5B-Instruct` (~1 Go) est téléchargé une fois
-depuis Hugging Face, puis relu depuis le cache local.
+depuis Hugging Face, puis relu depuis le cache local. Le premier rapport mensuel avec synthèse IA
+télécharge de même `Qwen/Qwen2.5-1.5B-Instruct` (~2,9 Go).
 
 ### 14.3 Run complet
 
@@ -230,7 +263,26 @@ export du texte des commentaires → inférence IA → rechargement des prédict
 `dbt run` complet → `dbt test`. Options : `--skip-ai` (réutilise les prédictions déjà présentes),
 `--skip-tests`.
 
-**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning ; `pytest` : 56/56 tests (voir 14.5).
+Le dashboard s'organise en 6 pages, dans la barre de navigation en haut :
+
+| Page | Contenu |
+| --- | --- |
+| Vue d'ensemble | Indicateurs globaux et avertissements de couverture |
+| Marketing | Dépenses par canal comparées au plan |
+| Ventes | CA net, couverture des données, mix produit |
+| Voix client | Sentiment, thèmes, produits mentionnés, commandes WhatsApp |
+| Recommandation | Répartition proposée des 15 M FCFA et cadre de test |
+| Rapport IA | Rapport mensuel : créer, mettre à jour, lire et télécharger |
+
+Le filtre de période (barre latérale) s'applique aux pages Vue d'ensemble, Ventes et Voix client, et se conserve d'une page à l'autre.
+
+Le rapport mensuel peut aussi être produit en ligne de commande :
+
+```bash
+python -m ai.reporting.generate_report --year 2026 --month 6 --save   # → outputs/reports/rapport_2026_06.md
+```
+
+**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning ; `pytest` : 66/66 tests (voir 14.5).
 
 Le chargement (`ingestion/load_raw.py`) valide les cinq feuilles et leurs colonnes **avant** d'écrire : une feuille absente, vide ou incomplète interrompt le run avec un message clair, sans modifier la base.
 
@@ -272,12 +324,17 @@ awale_boissons/
 ├── .streamlit/
 │   └── config.toml   (thème du dashboard)
 ├── app/
-│   ├── app.py
-│   └── theme.py      (palette, CSS, graphiques)
+│   ├── app.py        (point d'entrée : barre de navigation)
+│   ├── common.py     (connexion DuckDB, formats, filtre de période)
+│   ├── theme.py      (palette, CSS, graphiques)
+│   └── views/        (une page par fichier : overview, marketing, sales,
+│                      customers, recommendation, report)
 ├── ai/
 │   ├── classify_comments_hybrid.py
 │   ├── prompts/      (prompts versionnés)
-│   └── evaluation/
+│   ├── evaluation/
+│   └── reporting/    (rapport mensuel : query_marts, build_deterministic_report,
+│                      generate_report, prompts/)
 ├── analysis/
 │   ├── export_ai_input.py
 │   └── create_ai_sample.py
@@ -296,6 +353,8 @@ awale_boissons/
 ├── ingestion/
 │   ├── load_raw.py
 │   └── load_predictions.py
+├── outputs/
+│   └── reports/      (rapports mensuels générés : rapport_AAAA_MM.md)
 ├── pytest.ini
 ├── requirements.txt
 ├── requirements-dev.txt
@@ -325,6 +384,8 @@ mention contraire :
 | dbt test                                | **10,2 s mesurés**                                                                                                                                                                                  | —                                                |
 | Contrôles qualité                       | 10 min                                                                                                                                                                                              | Estimé — revue humaine                           |
 | Dashboard                               | 5 min                                                                                                                                                                                               | Estimé — revue humaine                           |
+| Rapport mensuel (synthèse IA)           | **~2 min mesurées** par mois, plus le chargement du modèle (~12 s à ~80 s) — voir 7 bis | Mesuré, sans supervision |
+| Relecture du rapport                    | 5 min | Estimé — revue humaine |
 
 Constat : dbt/DuckDB ne coûtent quasiment rien (~35 s cumulées, mesurées) — tout le temps du
 cycle mensuel vient de l'IA (~45 min) et de la revue humaine (25 min, non compressible).
@@ -373,7 +434,8 @@ Faits observés → qualité des données → observations → signaux → limit
 - WhatsApp
 - Customer Voice IA
 - Benchmark
-- Dashboard Streamlit
+- Dashboard Streamlit (6 pages, barre de navigation)
+- Rapport mensuel IA (page du dashboard et `ai/reporting/`, rapports dans `outputs/reports/`)
 - Allocation 15 M FCFA
 - Client Note (recommandation, niveau de confiance, mesures à 90 jours)
 - Runbook mensuel
