@@ -95,15 +95,8 @@ def _format_fcfa(value: float | int | None) -> str:
 
     value = float(value)
 
-    if value.is_integer():
-        return f"{int(value):,}".replace(",", " ") + " FCFA"
-
-    return (
-        f"{value:,.2f}"
-        .replace(",", " ")
-        .replace(".", ",")
-        + " FCFA"
-    )
+    # Le FCFA n'a pas de subdivision : on arrondit à l'unité.
+    return f"{round(value):,}".replace(",", " ") + " FCFA"
 
 
 def _format_pct(value: float | int | None) -> str:
@@ -343,7 +336,7 @@ def build_monthly_brief(
         if revenue_direction == "hausse":
 
             revenue_statement = (
-                f"Le CA est en hausse de "
+                f"Le chiffre d'affaires est en hausse de "
                 f"{_format_pct(revenue_growth_pct)} "
                 f"par rapport à "
                 f"{previous_period_label}."
@@ -352,17 +345,25 @@ def build_monthly_brief(
         elif revenue_direction == "baisse":
 
             revenue_statement = (
-                f"Le CA est en baisse de "
+                f"Le chiffre d'affaires est en baisse de "
                 f"{_format_pct(abs(revenue_growth_pct))} "
                 f"par rapport à "
+                f"{previous_period_label}."
+            )
+
+        elif revenue_direction == "stable":
+
+            revenue_statement = (
+                f"Le chiffre d'affaires est stable par rapport à "
                 f"{previous_period_label}."
             )
 
         else:
 
             revenue_statement = (
-                f"Le CA est stable par rapport à "
-                f"{previous_period_label}."
+                f"Les données de {previous_period_label} ne sont pas "
+                f"disponibles : l'évolution du chiffre d'affaires ne "
+                f"peut pas être calculée."
             )
 
         # -------------------------------------------------------------
@@ -375,16 +376,15 @@ def build_monthly_brief(
         ):
 
             data_quality_statement = (
-                "La comparaison mensuelle doit être interprétée "
-                "avec prudence car certaines journées de vente "
-                "ne sont pas observées."
+                "Les données de ventes manquent pour certains jours : "
+                "la comparaison avec le mois précédent est à lire "
+                "avec prudence."
             )
 
         else:
 
             data_quality_statement = (
-                "La couverture temporelle des ventes est complète "
-                "pour le mois."
+                "Les données de ventes couvrent tout le mois."
             )
 
         # =============================================================
@@ -513,8 +513,8 @@ def build_monthly_brief(
         else:
 
             principal_fait_marketing = (
-                "Aucune dépense marketing exploitable "
-                "n'est disponible pour le mois."
+                "Aucune dépense marketing n'est disponible "
+                "pour le mois."
             )
 
         # =============================================================
@@ -807,7 +807,7 @@ def build_monthly_brief(
         else:
 
             principal_signal_client = (
-                "La majorité des sentiments n'est pas déterminable."
+                "Aucune tendance ne se dégage des commentaires."
             )
 
         # =============================================================
@@ -970,7 +970,7 @@ def build_monthly_brief(
         ):
 
             attention_points.append(
-                "CA net en baisse par rapport "
+                "Chiffre d'affaires en baisse par rapport "
                 "au mois précédent."
             )
 
@@ -984,8 +984,8 @@ def build_monthly_brief(
         ):
 
             attention_points.append(
-                "La couverture des ventes est "
-                "incomplète sur le mois."
+                "Les données de ventes manquent pour "
+                "certains jours du mois."
             )
 
         # -------------------------------------------------------------
@@ -1015,7 +1015,7 @@ def build_monthly_brief(
 
             attention_points.append(
                 "Certaines commandes WhatsApp "
-                "livrées n'ont pas de montant exploitable."
+                "livrées n'ont pas de montant renseigné."
             )
 
         # -------------------------------------------------------------
@@ -1028,7 +1028,7 @@ def build_monthly_brief(
         ):
 
             positive_points.append(
-                "CA net en hausse par rapport "
+                "Chiffre d'affaires en hausse par rapport "
                 "au mois précédent."
             )
 
@@ -1353,7 +1353,7 @@ def build_monthly_brief(
                         f"Comparaison avec "
                         f"{previous_period_label}. "
                         f"{int(_safe_float(missing_sales_days))} "
-                        f"jour(s) de vente non observé(s) "
+                        f"jour(s) de vente non relevé(s) "
                         f"sur {calendar_days}."
                     )
                     if (
@@ -1365,8 +1365,8 @@ def build_monthly_brief(
                     else (
                         f"Comparaison avec "
                         f"{previous_period_label}. "
-                        "Tous les jours calendaires "
-                        "du mois sont observés."
+                        "Tous les jours du mois "
+                        "ont été relevés."
                     )
                 ),
             },

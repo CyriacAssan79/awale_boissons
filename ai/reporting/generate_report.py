@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import re
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -67,62 +68,88 @@ def load_reporting_prompt() -> str:
 
 def build_synthesis_prompt(context: dict[str, str]) -> str:
     return f"""
-Tu rédiges une courte synthèse professionnelle.
+Rédige une synthèse très courte d'un rapport commercial mensuel.
 
-Faits disponibles :
+Informations autorisées :
 - {context["revenue_statement"]}
 - {context["data_quality_statement"]}
 - {context["principal_marketing_fact"]}
 - {context["principal_customer_signal"]}
 
-Règles :
-- utilise uniquement ces faits ;
-- reformule-les simplement ;
-- aucune invention ;
-- aucun chiffre ;
-- aucun pourcentage ;
-- aucun montant ;
-- aucune date ;
-- aucune cause ;
-- aucune explication économique ;
-- aucune recommandation ;
+Consignes strictes :
+- utilise uniquement les informations ci-dessus ;
+- reprends chaque information presque mot pour mot, sans en changer le sens ;
+- garde les noms de canal et de produit tels quels ;
+- ne crée aucune nouvelle information ;
+- ne transforme pas une observation en explication ;
+- ne formule aucune causalité ;
+- ne formule aucune recommandation ;
+- ne parle pas de budget à allouer ;
 - ne parle pas de demande ;
-- ne parle pas d'évolution historique ;
 - ne parle pas d'une autre période ;
-- écris seulement 3 phrases ;
-- aucun titre.
+- ne donne aucun chiffre ;
+- ne donne aucun pourcentage ;
+- ne donne aucun montant ;
+- ne donne aucune date ;
+- écris une phrase complète par information, soit 4 phrases ;
+- chaque phrase commence par un article ou un nom de canal (Le, La, Les, Des, Meta…) ;
+- aucun titre ;
+- retourne uniquement le texte final.
 
-Retourne uniquement le paragraphe.
+La synthèse doit simplement résumer les principaux constats fournis.
 """.strip()
 
 def build_conclusion_prompt(context: dict[str, str]) -> str:
     return f"""
-Tu rédiges une courte conclusion professionnelle.
+Rédige une conclusion très courte d'un rapport commercial mensuel.
 
-Faits disponibles :
+Informations autorisées :
 - {context["revenue_statement"]}
 - {context["principal_customer_signal"]}
 - {context["top_product_statement"]}
 - {context["whatsapp_issue"]}
 
-Règles :
-- utilise uniquement ces faits ;
-- reformule-les simplement ;
-- aucune invention ;
-- aucun chiffre ;
-- aucun pourcentage ;
-- aucun montant ;
-- aucune date ;
-- aucune cause ;
-- aucune explication économique ;
-- aucune recommandation ;
+Consignes strictes :
+- utilise uniquement les informations ci-dessus ;
+- reprends chaque information presque mot pour mot, sans en changer le sens ;
+- garde les noms de canal et de produit tels quels ;
+- ne crée aucune nouvelle information ;
+- ne formule aucune causalité ;
+- ne formule aucune recommandation ;
+- ne propose aucune action ;
+- ne parle pas de budget à allouer ;
 - ne parle pas de demande ;
-- ne parle pas d'évolution historique ;
-- écris seulement 2 phrases ;
-- aucun titre.
+- ne parle pas d'une autre période ;
+- ne donne aucun chiffre ;
+- ne donne aucun pourcentage ;
+- ne donne aucun montant ;
+- ne donne aucune date ;
+- écris une phrase complète par information, soit 4 phrases ;
+- chaque phrase commence par un article (Le, La, Les, Des, Certaines…) ;
+- aucun titre ;
+- retourne uniquement le texte final.
 
-Retourne uniquement le paragraphe.
+La conclusion doit uniquement rappeler les constats déjà établis.
 """.strip()
+
+
+# Formats écrits en toutes lettres : le modèle ne doit recevoir aucun chiffre.
+FORMAT_WORDS = {
+    "1L": "en format un litre",
+    "33cl": "en format trente-trois centilitres",
+}
+
+
+def _product_name(product: dict[str, Any]) -> str:
+    """« bissap » + « 1L » → « Le bissap en format un litre »."""
+
+    name = str(product.get("product", "")).lower()
+    article = "L'" if name[:1] in "aeiouyéè" else "Le "
+    label = f"{article}{name}"
+
+    format_words = FORMAT_WORDS.get(str(product.get("format", "")))
+
+    return f"{label} {format_words}" if format_words else label
 
 
 def build_narrative_context(brief: dict[str, Any]) -> dict[str, str]:
@@ -144,23 +171,35 @@ def build_narrative_context(brief: dict[str, Any]) -> dict[str, str]:
     whatsapp = brief.get("whatsapp", {}) or {}
 
     top_product = products.get("top_product") or {}
+    top_channel = (marketing.get("top_spending_channel") or {}).get("channel")
 
-    marketing_fact = (
-        "Aucune dépense marketing exploitable n'est disponible."
-        if not marketing.get("channels")
-        else "Un canal représente la plus grande part des dépenses marketing observées."
-    )
+    # Les noms sont transmis en toutes lettres : sans eux, le modèle écrit
+    # « le canal » ou « le produit » et la phrase semble incomplète.
+    if not marketing.get("channels"):
+        marketing_fact = "Aucune dépense marketing n'est disponible."
+    elif top_channel and not re.search(r"\d", top_channel):
+        marketing_fact = (
+            f"{top_channel} représente la plus grande part "
+            "des dépenses marketing."
+        )
+    else:
+        marketing_fact = (
+            "Un seul canal représente la plus grande part "
+            "des dépenses marketing."
+        )
 
-    product_fact = (
-        "Un produit représente la plus grande part du chiffre d'affaires."
-        if top_product
-        else "Aucun produit dominant n'est déterminable dans les données disponibles."
-    )
+    if top_product:
+        product_fact = (
+            f"{_product_name(top_product)} représente la plus grande part "
+            "du chiffre d'affaires."
+        )
+    else:
+        product_fact = "Aucun produit ne se détache nettement ce mois-ci."
 
     whatsapp_issue = (
-        "Certaines commandes WhatsApp livrées présentent des montants non exploitables."
+        "Certaines commandes WhatsApp livrées n'ont pas de montant renseigné."
         if whatsapp.get("delivered_amount_missing_orders", 0) > 0
-        else "Aucun problème de montant WhatsApp livré n'est signalé dans les données disponibles."
+        else "Les montants des commandes WhatsApp livrées sont renseignés."
     )
 
     return {
@@ -175,26 +214,29 @@ def build_narrative_context(brief: dict[str, Any]) -> dict[str, str]:
             "par rapport à la période précédente."
             if sales.get("revenue_direction") == "hausse"
             else
-            "La direction du chiffre d'affaires n'est pas déterminable "
-            "dans les données disponibles."
+            "Le chiffre d'affaires est stable "
+            "par rapport à la période précédente."
+            if sales.get("revenue_direction") == "stable"
+            else
+            "Le mois précédent n'étant pas disponible, l'évolution "
+            "du chiffre d'affaires ne peut pas être calculée."
         ),
 
         "data_quality_statement": (
-            "La couverture temporelle des ventes est complète."
+            "Les données de ventes couvrent tout le mois."
             if sales.get("missing_sales_days") == 0
             else
-            "La couverture temporelle des ventes présente "
-            "des journées non observées."
+            "Les données de ventes manquent pour certains jours du mois."
             if sales.get("missing_sales_days") is not None
             else
-            "La couverture temporelle des ventes n'est pas déterminable."
+            "On ne sait pas si les données de ventes couvrent tout le mois."
         ),
 
         "principal_marketing_fact": marketing_fact,
 
         "principal_customer_signal": (
             customer_voice.get("principal_signal_client")
-            or "Aucun signal client déterminé."
+            or "Aucune tendance ne se dégage des commentaires."
         ),
 
         "top_product_statement": product_fact,
@@ -380,7 +422,10 @@ def generate_narrative(
 # Validation minimale de la sortie LLM
 # ---------------------------------------------------------------------
 
-def validate_narrative(text: str) -> tuple[bool, list[str]]:
+def validate_narrative(
+    text: str,
+    revenue_direction: str | None = None,
+) -> tuple[bool, list[str]]:
     """
     Vérifie que le texte produit par le LLM respecte les contraintes.
 
@@ -424,6 +469,19 @@ def validate_narrative(text: str) -> tuple[bool, list[str]]:
                 f"Formulation causale détectée : {pattern}"
             )
 
+    # Style télégraphique (« Commentaires positifs majoritaires. ») :
+    # le petit modèle supprime parfois les articles en début de phrase.
+    telegraphic = re.search(
+        r"(?:^|[.!?\]]\s+)(Chiffre|Commentaires|Commandes|Ventes|Données"
+        r"|Bissap|Gingembre|Bouye|Produit)\b",
+        text,
+    )
+
+    if telegraphic:
+        errors.append(
+            f"Phrase incomplète (article manquant) : « {telegraphic.group(1)}… »"
+        )
+
     # Le modèle ne doit pas réintroduire la recommandation 15M.
     if re.search(
         r"15\s*M|15\s*millions|15\s*000\s*000",
@@ -433,6 +491,33 @@ def validate_narrative(text: str) -> tuple[bool, list[str]]:
         errors.append(
             "Mention interdite de l'enveloppe de 15 M FCFA."
         )
+
+    # Le sens de l'évolution du CA doit correspondre au calcul du brief.
+    if revenue_direction is not None:
+        rises = re.search(
+            r"\b(hausse|augment\w*|progress\w*|supérieur\w*)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+        falls = re.search(
+            r"\b(baisse|diminu\w*|recul\w*|inférieur\w*)\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+
+        contradicted = {
+            "hausse": falls,
+            "baisse": rises,
+            "stable": rises or falls,
+            "inconnue": rises or falls,
+        }.get(revenue_direction)
+
+        if contradicted:
+            errors.append(
+                "Évolution du CA contraire au calcul : "
+                f"« {contradicted.group(1)} » alors que la direction est "
+                f"« {revenue_direction} »."
+            )
 
     return len(errors) == 0, errors
 
@@ -444,11 +529,25 @@ def build_safe_narrative(context: dict[str, str]) -> str:
         "[SYNTHESIS]\n"
         f"{context['revenue_statement']} "
         f"{context['data_quality_statement']} "
+        f"{context['principal_marketing_fact']} "
         f"{context['principal_customer_signal']}\n\n"
         "[CONCLUSION]\n"
         f"{context['top_product_statement']} "
         f"{context['whatsapp_issue']}"
     )
+
+
+# Fautes d'accord que le petit modèle commet de façon récurrente.
+GRAMMAR_FIXES = [
+    (r"\b([Cc])ertains (commandes|données|ventes)\b", r"\1ertaines \2"),
+]
+
+
+def fix_grammar(text: str) -> str:
+    for pattern, replacement in GRAMMAR_FIXES:
+        text = re.sub(pattern, replacement, text)
+
+    return text
 
 
 # ---------------------------------------------------------------------
@@ -511,19 +610,19 @@ def assemble_report(
 
     if not synthesis:
         synthesis = (
-            "La synthèse narrative n'a pas pu être générée. "
-            "Les sections factuelles restent disponibles."
+            "La synthèse n'a pas pu être rédigée. "
+            "Le détail du mois reste disponible ci-dessous."
         )
 
     if not conclusion:
         conclusion = (
-            "La conclusion narrative n'a pas pu être générée. "
-            "Les éléments factuels du rapport restent disponibles."
+            "La conclusion n'a pas pu être rédigée. "
+            "Le détail du mois reste disponible ci-dessus."
         )
 
     return f"""# Rapport mensuel — {period["current_period_label"].capitalize()}
 
-## 1. Synthèse
+## Synthèse
 
 {synthesis}
 
@@ -541,10 +640,145 @@ def assemble_report(
 
 {sections["positive"]}
 
-## 9. Conclusion
+## Conclusion
 
 {conclusion}
 """
+
+
+# ---------------------------------------------------------------------
+# Pipeline complet (utilisé par la CLI et par Streamlit)
+# ---------------------------------------------------------------------
+
+@dataclass
+class ReportResult:
+    report: str
+    brief: dict[str, Any]
+    llm_used: bool
+    llm_valid: bool
+    errors: list[str] = field(default_factory=list)
+    elapsed_seconds: float = 0.0
+
+
+def generate_monthly_report(
+    year: int,
+    month: int,
+    db_path: str | Path = "data/awale.duckdb",
+    model_bundle: tuple[Any, Any, str] | None = None,
+) -> ReportResult:
+    """
+    Construit le rapport mensuel complet.
+
+    `model_bundle` est le triplet (tokenizer, model, device) renvoyé par
+    load_model(). Sans modèle, la synthèse et la conclusion utilisent
+    directement le texte de secours déterministe.
+    """
+
+    started_at = time.perf_counter()
+
+    print(f"[INFO] Construction du brief {month:02d}/{year}")
+
+    brief = build_monthly_brief(
+        year=year,
+        month=month,
+        db_path=db_path,
+    )
+
+    print("[INFO] Brief construit.")
+
+    context = build_narrative_context(brief)
+
+    if model_bundle is None:
+        report = assemble_report(
+            brief=brief,
+            narrative=build_safe_narrative(context),
+        )
+
+        return ReportResult(
+            report=report,
+            brief=brief,
+            llm_used=False,
+            llm_valid=False,
+            elapsed_seconds=time.perf_counter() - started_at,
+        )
+
+    tokenizer, model, device = model_bundle
+
+    print("[INFO] Génération de la synthèse...")
+
+    synthesis = generate_narrative(
+        prompt=build_synthesis_prompt(context),
+        tokenizer=tokenizer,
+        model=model,
+        device=device,
+        max_new_tokens=120,
+    )
+
+    print("[INFO] Génération de la conclusion...")
+
+    conclusion = generate_narrative(
+        prompt=build_conclusion_prompt(context),
+        tokenizer=tokenizer,
+        model=model,
+        device=device,
+        max_new_tokens=120,
+    )
+
+    narrative = fix_grammar(
+        "[SYNTHESIS]\n"
+        f"{synthesis}\n\n"
+        "[CONCLUSION]\n"
+        f"{conclusion}"
+    )
+
+    print("[INFO] Validation de la sortie LLM...")
+
+    valid, errors = validate_narrative(
+        narrative,
+        revenue_direction=brief.get("sales", {}).get("revenue_direction"),
+    )
+
+    if not valid:
+        print("[WARNING] Sortie LLM non conforme :")
+
+        for error in errors:
+            print(f"  - {error}")
+
+        narrative = build_safe_narrative(context)
+        print("[INFO] Utilisation d'une synthèse de secours déterministe.")
+    else:
+        print("[INFO] Sortie LLM conforme.")
+
+    report = assemble_report(
+        brief=brief,
+        narrative=narrative,
+    )
+
+    return ReportResult(
+        report=report,
+        brief=brief,
+        llm_used=True,
+        llm_valid=valid,
+        errors=errors,
+        elapsed_seconds=time.perf_counter() - started_at,
+    )
+
+
+def save_report(report: str, year: int, month: int) -> Path:
+    output_dir = Path("outputs/reports")
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    output_file = output_dir / f"rapport_{year}_{month:02d}.md"
+
+    output_file.write_text(
+        report,
+        encoding="utf-8",
+    )
+
+    return output_file
 
 
 # ---------------------------------------------------------------------
@@ -585,100 +819,18 @@ def main():
 
     args = parser.parse_args()
 
-    print(
-        f"[INFO] Construction du brief "
-        f"{args.month:02d}/{args.year}"
-    )
-
-    brief = build_monthly_brief(
+    result = generate_monthly_report(
         year=args.year,
         month=args.month,
         db_path=args.db_path,
-    )
-
-    print("[INFO] Brief construit.")
-
-    context = build_narrative_context(brief)
-
-    tokenizer, model, device = load_model(
-        args.model,
-    )
-
-    print("[INFO] Génération de la synthèse...")
-
-    synthesis_prompt = build_synthesis_prompt(context)
-
-    synthesis = generate_narrative(
-        prompt=synthesis_prompt,
-        tokenizer=tokenizer,
-        model=model,
-        device=device,
-        max_new_tokens=120,
-    )
-
-    print("[INFO] Génération de la conclusion...")
-
-    conclusion_prompt = build_conclusion_prompt(context)
-
-    conclusion = generate_narrative(
-        prompt=conclusion_prompt,
-        tokenizer=tokenizer,
-        model=model,
-        device=device,
-        max_new_tokens=120,
-    )
-
-    narrative = (
-        "[SYNTHESIS]\n"
-        f"{synthesis}\n\n"
-        "[CONCLUSION]\n"
-        f"{conclusion}"
-    )
-
-    print("[INFO] Validation de la sortie LLM...")
-
-    valid, errors = validate_narrative(
-        narrative,
-    )
-
-    if not valid:
-        print("[WARNING] Sortie LLM non conforme :")
-
-        for error in errors:
-            print(f"  - {error}")
-
-        print(
-            "[WARNING] Le rapport sera quand même assemblé "
-            "pour faciliter le diagnostic."
-        )
-        narrative = build_safe_narrative(context)
-        print("[INFO] Utilisation d'une synthèse de secours déterministe.")
-    else:
-        print("[INFO] Sortie LLM conforme.")
-    report = assemble_report(
-        brief=brief,
-        narrative=narrative,
+        model_bundle=load_model(args.model),
     )
 
     print()
-    print(report)
+    print(result.report)
 
     if args.save:
-        output_dir = Path("outputs/reports")
-        output_dir.mkdir(
-            parents=True,
-            exist_ok=True,
-        )
-
-        output_file = (
-            output_dir
-            / f"rapport_{args.year}_{args.month:02d}.md"
-        )
-
-        output_file.write_text(
-            report,
-            encoding="utf-8",
-        )
+        output_file = save_report(result.report, args.year, args.month)
 
         print(
             f"[INFO] Rapport sauvegardé : "

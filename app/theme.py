@@ -125,8 +125,10 @@ _CSS = f"""
     padding-bottom: 4rem;
 }}
 
+/* ---- Barre de navigation (st.navigation position="top") ---- */
 [data-testid="stHeader"] {{
-    background: transparent;
+    background: {CREME};
+    border-bottom: 1px solid {BORDER};
 }}
 
 /* ---- Bandeau ---- */
@@ -306,6 +308,111 @@ _CSS = f"""
     font-size: .88rem;
     text-transform: none;
     letter-spacing: 0;
+}}
+
+/* ---- Rapport mensuel ---- */
+.report-head {{
+    margin: 1.6rem 0 1rem;
+}}
+.report-eyebrow {{
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: {BISSAP};
+}}
+.report-title {{
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    color: {INK};
+    margin-top: .2rem;
+}}
+.report-meta {{
+    margin-top: .3rem;
+    font-size: .85rem;
+    color: {MUTED};
+}}
+[class*="st-key-card_report_"] {{
+    padding: 1.1rem 1.5rem 1rem;
+    height: 100%;
+}}
+[class*="st-key-card_report_"] p,
+[class*="st-key-card_report_"] li {{
+    font-size: .98rem;
+    line-height: 1.65;
+    color: {INK};
+}}
+[class*="st-key-card_report_"] li {{
+    margin-bottom: .15rem;
+}}
+[class*="st-key-card_report_"] em {{
+    color: {MUTED};
+    font-size: .9rem;
+}}
+[class*="st-key-card_report_"] strong {{
+    font-weight: 700;
+}}
+[class*="st-key-card_report_"] h3 {{
+    font-size: 1rem;
+    font-weight: 700;
+    color: {INK};
+    padding: .6rem 0 .1rem;
+}}
+.report-section-title {{
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: {INK};
+    margin: .1rem 0 .55rem;
+}}
+.report-section-title span {{
+    font-size: 1.25rem;
+}}
+/* Synthèse et conclusion : mises en avant */
+.st-key-card_report_synthese,
+.st-key-card_report_conclusion {{
+    background: linear-gradient(135deg, #FFFFFF 0%, {CREME} 100%);
+    border-left: 5px solid {BISSAP} !important;
+}}
+.st-key-card_report_synthese p,
+.st-key-card_report_conclusion p {{
+    font-size: 1.08rem;
+    line-height: 1.75;
+}}
+.st-key-card_report_attention {{
+    border-top: 4px solid {TERRACOTTA} !important;
+}}
+.st-key-card_report_positifs {{
+    border-top: 4px solid {GINGEMBRE} !important;
+}}
+[class*="st-key-card_report_"] table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+    margin: .4rem 0 .6rem;
+}}
+[class*="st-key-card_report_"] th {{
+    background: {CREME};
+    color: {MUTED};
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border: none;
+    border-bottom: 1px solid {BORDER};
+    padding: .55rem .7rem;
+}}
+[class*="st-key-card_report_"] td {{
+    border: none;
+    border-bottom: 1px solid {GRID};
+    padding: .55rem .7rem;
+    color: {INK};
+}}
+[class*="st-key-card_report_"] tr:last-child td {{
+    border-bottom: none;
 }}
 
 /* ---- Alertes ---- */

@@ -14,19 +14,25 @@ from __future__ import annotations
 from typing import Any
 
 
+def _label(text: str) -> str:
+    """Met une majuscule initiale sans toucher au reste (« bissap 1L » → « Bissap 1L »)."""
+
+    return text[:1].upper() + text[1:] if text else text
+
+
 def _format_channel_row(channel: dict[str, Any]) -> str:
     """Construit une ligne Markdown pour un canal marketing."""
 
     coverage = channel.get("source_coverage", "")
 
     if coverage == "both_available":
-        coverage_label = "Données média + facturation"
+        coverage_label = "Suivi + factures"
     elif coverage == "media_plan_only":
-        coverage_label = "Plan média uniquement"
+        coverage_label = "Plan seulement"
     elif coverage == "invoice_only":
-        coverage_label = "Facturation uniquement"
+        coverage_label = "Factures seulement"
     else:
-        coverage_label = "Couverture partielle"
+        coverage_label = "Partielles"
 
     return (
         f"| {channel.get('channel', 'Inconnu')} "
@@ -45,25 +51,18 @@ def build_sales_section(brief: dict[str, Any]) -> str:
     sales = brief["sales"]
 
     return f"""
-## 2. Ventes
-
-**{period["current_period_label"].capitalize()}**
+## Ventes
 
 {sales["revenue_statement"]}
 
-- CA : **{sales["revenue_fcfa_formatted"]}**
-- CA du mois précédent ({period["previous_period_label"]}) : **{sales["previous_revenue_fcfa_formatted"]}**
-- Évolution du CA : **{sales["revenue_growth_pct_formatted"]}**
-- Unités nettes vendues : **{sales["net_units_sold_formatted"]}**
-- Points de vente actifs : **{sales["active_pos_formatted"]}**
-- Communes couvertes : **{sales["active_communes_formatted"]}**
-- Jours de vente observés : **{sales["observed_sales_days"]}/{sales["calendar_days"]}**
-- Jours non observés : **{sales["missing_sales_days"]}**
+- Chiffre d'affaires : **{sales["revenue_fcfa_formatted"]}**
+- Mois précédent ({period["previous_period_label"]}) : **{sales["previous_revenue_fcfa_formatted"]}**
+- Évolution : **{sales["revenue_growth_pct_formatted"]}**
+- Unités vendues : **{sales["net_units_sold_formatted"]}**
+- Points de vente actifs : **{sales["active_pos_formatted"]}**, dans **{sales["active_communes_formatted"]}** communes
+- Jours couverts par les données : **{sales["observed_sales_days"]} sur {sales["calendar_days"]}**
 
-**Qualité de la comparaison :**  
-{sales["data_quality_statement"]}
-
-{sales["comparison_caveat"]}
+*{sales["data_quality_statement"]}*
 """
 
 
@@ -77,38 +76,18 @@ def build_marketing_section(brief: dict[str, Any]) -> str:
         for channel in marketing["channels_formatted"]
     ]
 
-    table = "\n".join(
-        [
-            "| Canal | Dépenses observées | Part | Budget planifié | Facturé | Couverture |",
-            "|---|---:|---:|---:|---:|---|",
-            *rows,
-        ]
-    )
-
-    top = marketing["top_spending_channel"]
-    top_share = next(
-        (
-            channel["share"]
-            for channel in marketing["channels_formatted"]
-            if channel["channel"] == top["channel"]
-        ),
-        "0,0 %",
-    )
-
     return f"""
-## 3. Où va l'argent ?
+## Où va l'argent ?
 
-**Dépenses totales observées :**  
-**{marketing["total_spend_formatted"]}**
+Total dépensé : **{marketing["total_spend_formatted"]}**
 
 {marketing["principal_fait_marketing"]}
 
-| Canal | Dépenses observées | Part | Budget planifié | Facturé | Couverture |
+| Canal | Dépensé | Part | Prévu | Facturé | Sources |
 |---|---:|---:|---:|---:|---|
 {chr(10).join(rows)}
 
-**Canal représentant la plus grande part des dépenses observées :**  
-{top["channel"]} — **{top_share}** du total.
+*Sources : « Suivi + factures » signifie que la dépense est confirmée par le suivi des campagnes et par les factures.*
 """
 
 
@@ -117,12 +96,14 @@ def build_customer_voice_section(brief: dict[str, Any]) -> str:
 
     voice = brief["customer_voice"]
 
-    themes = voice["top_themes"]
+    theme_names = {"autre": "Autres sujets"}
 
     theme_lines = [
-        f"- **{theme['theme']}** : {theme['comments']} commentaire(s)"
-        for theme in themes
+        f"- {theme_names.get(theme['theme'], _label(theme['theme']))} : "
+        f"**{theme['comments']}** commentaire(s)"
+        for theme in voice["top_themes"]
     ]
+
     def format_share(value: Any) -> str:
         if value is None:
             return "donnée non disponible"
@@ -133,22 +114,18 @@ def build_customer_voice_section(brief: dict[str, Any]) -> str:
     neutral_share = format_share(voice.get("neutral_share_pct"))
 
     return f"""
-
-## 4. Voix du client
-
-**Commentaires analysés :** {voice["comments_count"]}
+## Voix du client
 
 {voice["principal_signal_client"]}
 
-### Sentiment
+**Ce que pensent les clients** — {voice["sentiment_total"]} avis sur {voice["comments_count"]} commentaires
 
-- Positif : **{voice["positive_count"]}** ({positive_share})
-- Négatif : **{voice["negative_count"]}** ({negative_share})
-- Neutre : **{voice["neutral_count"]}** ({neutral_share})
-- Spam : **{voice["spam_count"]}**
-- Total utilisé pour le calcul du sentiment : **{voice["sentiment_total"]}**
+- Positifs : **{voice["positive_count"]}** ({positive_share})
+- Négatifs : **{voice["negative_count"]}** ({negative_share})
+- Neutres : **{voice["neutral_count"]}** ({neutral_share})
+- Messages indésirables, non comptés : **{voice["spam_count"]}**
 
-### Principaux thèmes
+**Sujets les plus abordés**
 
 {chr(10).join(theme_lines)}
 """
@@ -162,7 +139,7 @@ def build_products_section(brief: dict[str, Any]) -> str:
 
     rows = [
         (
-            f"| {product['product']} {product['format']} "
+            f"| {_label(product['product'])} {product['format']} "
             f"| {product['units']} "
             f"| {product['revenue']} "
             f"| {product['revenue_share']} |"
@@ -173,20 +150,12 @@ def build_products_section(brief: dict[str, Any]) -> str:
     top_product = products["top_product"]
     top_product_share = f"{top_product['revenue_share_pct']:.1f}".replace(".", ",")
 
-    top_product_statement = (
-        f"**{top_product['product']} {top_product['format']} "
-        f"({top_product['product_sku']}) — "
-        f"{top_product_share} % du CA.**"
-    )
-
     return f"""
-## 5. Produits
+## Produits
 
-Le produit représentant la plus grande part du chiffre d'affaires est :
+Produit phare du mois : **{_label(top_product['product'])} {top_product['format']}**, avec **{top_product_share} %** du chiffre d'affaires.
 
-{top_product_statement}
-
-| Produit | Unités | CA | Part du CA |
+| Produit | Unités | Chiffre d'affaires | Part |
 |---|---:|---:|---:|
 {chr(10).join(rows)}
 """
@@ -197,25 +166,24 @@ def build_whatsapp_section(brief: dict[str, Any]) -> str:
     whatsapp = brief["whatsapp_formatted"]
 
     return f"""
-## 6. WhatsApp
+## Commandes WhatsApp
 
 - Commandes reçues : **{whatsapp["orders"]}**
-- Commandes livrées : **{whatsapp["delivered_orders"]}**
-- Commandes annulées : **{whatsapp["cancelled_orders"]}**
-- Commandes en attente : **{whatsapp["pending_orders"]}**
-- Unités commandées : **{whatsapp["total_units"]}**
+- Livrées : **{whatsapp["delivered_orders"]}**
+- Annulées : **{whatsapp["cancelled_orders"]}**
+- En attente : **{whatsapp["pending_orders"]}**
 
-### Répartition des unités
+**Unités commandées : {whatsapp["total_units"]}**
 
 - Bissap : **{whatsapp["bissap_units"]}**
 - Gingembre : **{whatsapp["gingembre_units"]}**
 - Bouye : **{whatsapp["bouye_units"]}**
 
-### Qualité des montants
+**Montants des commandes livrées**
 
-- Montant connu des commandes livrées : **{whatsapp["delivered_known_amount"]}**
-- Commandes livrées sans montant exploitable : **{whatsapp["missing_amount_orders"]}**
-- Commandes présentant un montant considéré comme atypique : **{whatsapp["outlier_amount_orders"]}**
+- Total des montants renseignés : **{whatsapp["delivered_known_amount"]}**
+- Commandes sans montant renseigné : **{whatsapp["missing_amount_orders"]}**
+- Commandes au montant inhabituel, écartées du total : **{whatsapp["outlier_amount_orders"]}**
 """
 
 
@@ -226,16 +194,15 @@ def build_attention_section(brief: dict[str, Any]) -> str:
 
     if not points:
         return """
+## Points d'attention
 
-## 7. Points d'attention
-
-Aucun point d'attention déterministe n'a été identifié dans les données disponibles.
+Aucun point d'attention ce mois-ci.
 """
 
     lines = [f"- {point}" for point in points]
 
     return f"""
-## 7. Points d'attention
+## Points d'attention
 
 {chr(10).join(lines)}
 """
@@ -248,15 +215,15 @@ def build_positive_section(brief: dict[str, Any]) -> str:
 
     if not points:
         return """
-## 8. Points positifs
+## Points positifs
 
-Aucun point positif déterministe n'a été identifié dans les données disponibles.
+Aucun point positif particulier ce mois-ci.
 """
 
     lines = [f"- {point}" for point in points]
 
     return f"""
-## 8. Points positifs
+## Points positifs
 
 {chr(10).join(lines)}
 """
