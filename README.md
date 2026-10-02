@@ -100,8 +100,8 @@ marts DuckDB → query_marts.py (brief chiffré) → build_deterministic_report.
 
 **Durées mesurées (CPU, 01/10/2026)** :
 
-- chargement du modèle : ~12 s si le modèle est déjà dans le cache local, ~70–80 s sinon (une fois par session du dashboard) ;
-- génération : **~1 min 50 à 2 min 10 par mois** (mesuré sur avril, mai et juin) ;
+- rapport complet : **jusqu'à 10 min par mois**, chargement du modèle compris ;
+- détail sur une machine où le modèle est déjà en cache : chargement ~12 s (~70–80 s à froid, une fois par session du dashboard), génération ~1 min 50 à 2 min 10 (avril, mai et juin) ;
 - sans synthèse IA (interrupteur désactivé) : instantané.
 
 Avril, mai et juin passent les contrôles. Janvier bascule sur la synthèse de secours : le modèle y invente une évolution du CA alors que décembre 2025 n'est pas dans les données.
@@ -366,29 +366,27 @@ awale_boissons/
 
 ## 16. Run mensuel
 
-Cible : environ 70 minutes en mois régulier — **encore au-dessus de l'heure visée par le brief**,
-mais loin des ~302 min d'avant l'optimisation incrémentale (40 min de socle fixe estimé + 262 min
-d'IA mesurés sur l'historique complet). `run_pipeline.py` (sans `--skip-ai`) a
-été exécuté de bout en bout le 2026-09-18 ; les temps ci-dessous sont mesurés sur ce run, sauf
-mention contraire :
+Durées mesurées le 01/10/2026 sur un cycle complet (pipeline, classification des commentaires,
+rapport mensuel) ; les étapes humaines sont estimées.
 
-| Étape                                   | Temps                                                                                                                                                                                               | Nature                                           |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Préparation fichiers                    | 10 min                                                                                                                                                                                              | Estimé — revue humaine, non mesurable par un run |
-| Ingestion (`load_raw.py`)               | **2,5 s mesurés**                                                                                                                                                                                   | —                                                |
-| dbt run (1<sup>re</sup> passe, hors IA) | **7 s mesurés**                                                                                                                                                                                     | —                                                |
-| Export texte IA                         | **1,1 s mesuré**                                                                                                                                                                                    | —                                                |
-| Inférence IA                            | ~45 min pour un mois type (~470 nouveaux commentaires, débit de 5,55 s/commentaire mesuré sur un échantillon de 120) ; **~262 min pour le tout premier run** — voir `docs/ai_documentation.ipynb` 8 | Mesuré et extrapolé                              |
-| Rechargement prédictions                | **2,3 s mesurés**                                                                                                                                                                                   | —                                                |
-| dbt run (2<sup>e</sup> passe, complet)  | **13,8 s mesurés**                                                                                                                                                                                  | —                                                |
-| dbt test                                | **10,2 s mesurés**                                                                                                                                                                                  | —                                                |
-| Contrôles qualité                       | 10 min                                                                                                                                                                                              | Estimé — revue humaine                           |
-| Dashboard                               | 5 min                                                                                                                                                                                               | Estimé — revue humaine                           |
-| Rapport mensuel (synthèse IA)           | **~2 min mesurées** par mois, plus le chargement du modèle (~12 s à ~80 s) — voir 7 bis | Mesuré, sans supervision |
-| Relecture du rapport                    | 5 min | Estimé — revue humaine |
+| Étape | Temps | Nature |
+| --- | --- | --- |
+| Préparation fichiers | 10 min | Estimé — revue humaine |
+| Pipeline hors classification (`run_pipeline.py` : ingestion, `dbt run` ×2, export, rechargement, `dbt test`) | **2 à 3 min** | Mesuré, sans supervision |
+| Classification des commentaires (`classify_comments_hybrid.py`) | **~40 min** | Mesuré, sans supervision |
+| Contrôles qualité | 10 min | Estimé — revue humaine |
+| Dashboard | 5 min | Estimé — revue humaine |
+| Rapport mensuel (synthèse IA) | **jusqu'à 10 min**, chargement du modèle compris — voir 7 bis | Mesuré, sans supervision |
+| Relecture du rapport | 5 min | Estimé — revue humaine |
+| **Total** | **≈ 1 h 25** (dont 30 min de présence active) | |
 
-Constat : dbt/DuckDB ne coûtent quasiment rien (~35 s cumulées, mesurées) — tout le temps du
-cycle mensuel vient de l'IA (~45 min) et de la revue humaine (25 min, non compressible).
+**Le cycle complet dépasse l'heure visée par le brief.** La classification des commentaires en
+représente près de la moitié : 40 min correspondent au reclassement complet de l'historique
+(2 831 commentaires, déjà mesuré à ~40 min le 29/09/2026). Lorsqu'elle ne classe que les
+commentaires du mois, elle a été mesurée à 7,2 min (juin, 453 nouveaux commentaires, 29/09/2026) :
+le cycle tombe alors à **≈ 50 min**. Le reclassement complet a lieu au premier lancement et après
+chaque changement de règles, de prompt ou de modèle.
+
 `classify_comments_hybrid.py` est incrémental : il ne classe que les `comment_id` absents de
 `ai/evaluation/social_comments_predictions_v2_full.csv` (validé deux fois : retrait de 15 puis de
 10 commentaires, relance, résultats bit-à-bit identiques aux prédictions d'origine). Chaque ligne
@@ -413,9 +411,8 @@ python ai/evaluation/merge_validated_draft.py            # aperçu
 python ai/evaluation/merge_validated_draft.py --apply    # ajoute les lignes validées à labeled_sample.csv
 ```
 
-Piste
-restante pour repasser sous l'heure : réduire `max_new_tokens` ou augmenter `BATCH_SIZE` côté
-modèle — non implémenté.
+Pistes pour repasser sous l'heure lors d'un reclassement complet : réduire `max_new_tokens` ou
+augmenter `BATCH_SIZE` côté modèle de classification — non implémenté.
 
 Le détail figure dans `docs/Runbook_Mensuel.ipynb`.
 
