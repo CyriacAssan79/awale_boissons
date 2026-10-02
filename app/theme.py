@@ -125,7 +125,7 @@ _CSS = f"""
     padding-bottom: 4rem;
 }}
 
-/* ---- Barre de navigation (st.navigation position="top") ---- */
+/* ---- En-tête ---- */
 [data-testid="stHeader"] {{
     background: {CREME};
     border-bottom: 1px solid {BORDER};
@@ -206,6 +206,63 @@ _CSS = f"""
     margin-top: .1rem;
     font-size: .9rem;
     color: {MUTED};
+}}
+.section-title-row {{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}}
+.section-help {{
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    border-radius: 50%;
+    border: 1.5px solid {MUTED};
+    color: {MUTED};
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: help;
+    outline: none;
+}}
+.section-help:hover,
+.section-help:focus {{
+    border-color: {BISSAP};
+    color: {BISSAP};
+}}
+.section-help-tip {{
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: calc(100% + .6rem);
+    left: 0;
+    z-index: 1000;
+    width: min(28rem, 80vw);
+    padding: .85rem 1rem;
+    background: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(43, 29, 24, .12);
+    color: {INK};
+    font-size: .85rem;
+    font-weight: 400;
+    line-height: 1.45;
+    text-align: left;
+    transition: opacity .15s ease;
+}}
+.section-help:hover .section-help-tip,
+.section-help:focus .section-help-tip {{
+    visibility: visible;
+    opacity: 1;
+}}
+.section-help-tip ul {{
+    margin: 0;
+    padding-left: 1.1rem;
+}}
+.section-help-tip li {{
+    margin: 0 0 .35rem;
 }}
 
 /* ---- Cartes (conteneurs avec key="card_*") ---- */
@@ -448,6 +505,24 @@ _CSS = f"""
     font-size: .78rem;
     color: {MUTED};
 }}
+.sidebar-nav-section {{
+    margin: 1rem 0 .25rem;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: {MUTED};
+}}
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {{
+    border-radius: 10px;
+}}
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"][aria-current="page"] {{
+    background: rgba(156, 31, 63, .1);
+}}
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"][aria-current="page"] span {{
+    color: {BISSAP};
+    font-weight: 700;
+}}
 
 /* ---- Pied de page ---- */
 .footer {{
@@ -486,13 +561,21 @@ def hero(eyebrow: str, title: str, text: str, pills: list[str]) -> None:
     )
 
 
-def section(number: int, title: str, subtitle: str) -> None:
+def section(number: int, title: str, subtitle: str, help: str = "") -> None:
+    """`help` : contenu HTML d'une infobulle affichée au survol d'un « ? » à côté du titre."""
+    help_html = (
+        f'<span class="section-help" tabindex="0" aria-label="Aide">?'
+        f'<span class="section-help-tip" role="tooltip">{help}</span></span>'
+        if help
+        else ""
+    )
+
     st.markdown(
         f"""
         <div class="section-head">
             <div class="section-num">{number}</div>
             <div>
-                <div class="section-title">{title}</div>
+                <div class="section-title-row"><span class="section-title">{title}</span>{help_html}</div>
                 <div class="section-sub">{subtitle}</div>
             </div>
         </div>
@@ -530,6 +613,10 @@ def sidebar_brand(name: str, tagline: str, icon: str) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def sidebar_nav_section(title: str) -> None:
+    st.sidebar.markdown(f'<div class="sidebar-nav-section">{title}</div>', unsafe_allow_html=True)
 
 
 def footer(text: str) -> None:
