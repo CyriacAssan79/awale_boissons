@@ -23,6 +23,39 @@ def _format_ratio(value: float) -> str:
     return f"{value * 100:.1f} %"
 
 
+FCFA_METRICS = {
+    "ca_net",
+    "ca_brut",
+    "spend_marketing",
+    "mix_produit",
+    "ecart_depense_facture",
+    "budget_test_propose",
+}
+
+RATIO_METRICS = {
+    "evolution_ca",
+    "part_budget_canal",
+    "sentiment_client",
+    "taux_reachat_livraison",
+    "taux_retours",
+    "whatsapp_montants_exploitables",
+}
+
+
+def format_value(metric: str, value) -> str:
+    """Formate une valeur selon l'unité de la métrique."""
+    if pd.isna(value):
+        return "N/A"
+
+    if metric in FCFA_METRICS:
+        return _format_fcfa(float(value))
+
+    if metric in RATIO_METRICS:
+        return _format_ratio(float(value))
+
+    return str(value)
+
+
 def format_answer(
     intent: QueryIntent,
     result: pd.DataFrame,
@@ -43,27 +76,7 @@ def format_answer(
         if pd.isna(value):
             return "Aucune donnée disponible pour cette question."
 
-        if metric in {
-            "ca_net",
-            "ca_brut",
-            "spend_marketing",
-            "mix_produit",
-            "ecart_depense_facture",
-            "budget_test_propose",
-        }:
-            return _format_fcfa(float(value))
-
-        if metric in {
-            "evolution_ca",
-            "part_budget_canal",
-            "sentiment_client",
-            "taux_reachat_livraison",
-            "taux_retours",
-            "whatsapp_montants_exploitables",
-        }:
-            return _format_ratio(float(value))
-
-        return str(value)
+        return format_value(metric, value)
 
     # ---------------------------------------------------------
     # Résultats avec dimensions
@@ -89,28 +102,7 @@ def format_answer(
 
         value = row.get(metric)
 
-        if pd.isna(value):
-            formatted_value = "N/A"
-        elif metric in {
-            "ca_net",
-            "ca_brut",
-            "spend_marketing",
-            "mix_produit",
-            "ecart_depense_facture",
-            "budget_test_propose",
-        }:
-            formatted_value = _format_fcfa(float(value))
-        elif metric in {
-            "evolution_ca",
-            "part_budget_canal",
-            "sentiment_client",
-            "taux_reachat_livraison",
-            "taux_retours",
-            "whatsapp_montants_exploitables",
-        }:
-            formatted_value = _format_ratio(float(value))
-        else:
-            formatted_value = str(value)
+        formatted_value = format_value(metric, value)
 
         if parts:
             lines.append(

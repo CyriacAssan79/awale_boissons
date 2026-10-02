@@ -1,52 +1,234 @@
 from __future__ import annotations
 
-from .dimensions import resolve_dimension
-from .intent import build_intent
-from .periods import extract_month, extract_relative_months
-from .resolver import resolve_metric_alias
-from .filters import CHANNEL_ALIASES, resolve_channel
 import re
+import unicodedata
+
+from .dimensions import resolve_dimension
+from .filters import CHANNEL_ALIASES, PRODUCT_ALIASES, resolve_channel, resolve_product
+from .intent import build_intent
+from .periods import (
+    LATEST_MONTH,
+    extract_month,
+    extract_month_without_year,
+    extract_relative_months,
+    extract_since,
+    mentions_latest_month,
+)
+from .resolver import resolve_metric
+
+
+def normalize(text: str) -> str:
+    """Minuscules, sans accents, apostrophes et espaces uniformisés.
+
+    « Chiffre d’Affaire », « chiffre d'affaires » et « CHIFFRE D'AFFAIRES »
+    deviennent comparables.
+    """
+    text = unicodedata.normalize("NFKD", text.lower())
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    text = re.sub(r"[’`´]", "'", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _contains(term: str, text: str) -> bool:
+    """Cherche un terme comme mot entier : « ca » ne doit pas trouver « canal »."""
+    return re.search(rf"(?<!\w){re.escape(normalize(term))}(?!\w)", text) is not None
+
+
+# Façons de désigner chaque métrique (texte normalisé, sans accents).
+METRIC_PATTERNS = {
+    "mix_produit": [
+        r"\bmix\b",
+    ],
+    "spend_marketing": [
+        r"\bdepens\w*",             # dépense, dépenses, dépensé, dépenser
+        r"\bspend\b",
+        r"\bbudgets?\b",
+        r"\binvesti\w*",            # investi, investissement
+    ],
+    "ca_net": [
+        r"\bchiffres? d\s*'?\s*affaires?\b",
+        r"\bca\b",
+        r"\brevenus?\b",
+        r"\brecettes?\b",
+        r"\bventes?\b",
+        r"\bvend(?:u|us|ue|ues|re|ons|ez|ent|ait|aient)\b",   # « combien avons-nous vendu »
+        r"\brapport(?:e|es|ent|ait|aient)\b",   # « combien rapporte… »
+        r"\bfait combien\b",                    # « on a fait combien »
+        r"\bcombien\b.*\bfait\b",               # « combien avons-nous fait »
+    ],
+}
+
+UNSUPPORTED_METRICS = [
+    "roi",
+    "retour sur investissement",
+    "coût par litre",
+    "cout par litre",
+    "chiffre d'affaires livraison",
+    "ca livraison",
+]
+
+CAUSAL_TERMS = [
+    "causé",
+    "cause",
+    "causer",
+    "pourquoi",
+    "impact",
+    "influence",
+    "responsable",
+]
+
+FORECAST_TERMS = [
+    "prévoir",
+    "prévision",
+    "prévisions",
+    "prédire",
+    "prédiction",
+    "prévisionnel",
+    "sera",
+    "seront",
+    "prochain mois",
+    "mois prochain",
+]
+
+# Mots désignant chaque découpage, au singulier et au pluriel.
+DIMENSION_WORDS = {
+    "mois": "mois",
+    "canal": "canal|canaux",
+    "produit": "produits?",
+    "plateforme": "plateformes?",
+    "commune": "communes?",
+    "format": "formats?",
+}
+
+# « par canal », « chaque produit », « quel mois », « selon le canal »…
+# « entre les produits », « des canaux »
+DIMENSION_BEFORE = (
+    r"par|chaque|quel|quels|quelle|quelles|des"
+    r"|selon(?: le| la| les)?|entre(?: les)?"
+)
+
+# « le canal qui… », « les produits ayant… », « le produit le plus vendu »
+DIMENSION_AFTER = r"qui|ou|ayant|dont|(?:le|la|les) (?:plus|moins|mieux)"
+
+# Évolution, tendance ou résumé dans le temps : découpage par mois implicite.
+MONTH_TRIGGERS = [
+    r"\bmensuel\w*",            # mensuel, mensuellement
+    r"\bevolu\w*",              # évolue, évolution
+    r"\bau fil des mois\b",
+    r"\bmois apres mois\b",
+    r"\bdans le temps\b",
+    r"\btendance\w*",
+    r"\bse port\w*",            # « comment se porte le CA »
+    r"\bcomment va\b",
+    r"\baugment\w*",
+    r"\bdiminu\w*",
+    r"\bbaiss\w*",
+    r"\bhausse\b",
+    r"\bprogress\w*",
+    r"\brecul\w*",
+    r"\bresum\w*",              # résumé, résume-moi
+    r"\bbilan\b",
+    r"\bsynthese\b",
+]
+
+# Dépenses : « sur quoi avons-nous dépensé » = par canal.
+CHANNEL_TRIGGERS = [
+    r"\bsur quoi\b",
+    r"\bdans quoi\b",
+    r"\bou va l'argent\b",
+    r"\bou (?:avons-nous|a-t-on|on a|est passe)\b",
+]
+
+# Le chiffre d'affaires par produit ou par format est porté par la
+# métrique mix_produit (même chiffre d'affaires, détaillé par produit).
+PRODUCT_DIMENSIONS = {"produit", "format"}
+
+# Classement demandé : les termes « min » sont testés en premier
+# (« le moins bien » avant « bien »).
+COMPARISON_TERMS = {
+    "min": ["le moins", "la moins", "les moins", "plus faible", "plus faibles",
+            "plus bas", "plus basse", "minimum"],
+    "max": ["le plus", "la plus", "les plus", "plus élevé", "plus élevée",
+            "plus gros", "plus grosse", "maximum", "meilleur", "meilleure",
+            "en tête", "le mieux"],
+}
+
+
+def _find_all(aliases: dict, resolve, text: str) -> list[str]:
+    """Valeurs citées dans la question, sans doublon, dans l'ordre d'apparition."""
+    found = []
+
+    for alias in aliases:
+        match = re.search(rf"(?<!\w){re.escape(normalize(alias))}(?!\w)", text)
+
+        if match:
+            found.append((match.start(), resolve(alias)))
+
+    return list(dict.fromkeys(value for _, value in sorted(found)))
+
+
+def _single_or_list(values: list[str]) -> str | list[str] | None:
+    """Un seul élément : filtre simple. Plusieurs : comparaison entre eux."""
+    if not values:
+        return None
+
+    return values[0] if len(values) == 1 else values
+
+
+def _detect_metrics(text: str) -> list[str]:
+    """Métriques citées, dans l'ordre de la question (« les ventes et les dépenses »)."""
+    positions = {}
+
+    for metric, patterns in METRIC_PATTERNS.items():
+        matches = [m.start() for p in patterns if (m := re.search(p, text))]
+
+        if matches:
+            positions[metric] = min(matches)
+
+    # Le mix produit est déjà du chiffre d'affaires : pas de doublon.
+    if "mix_produit" in positions:
+        positions.pop("ca_net", None)
+
+    return sorted(positions, key=positions.get)
+
+
+def _detect_dimensions(text: str) -> list[str]:
+    names = []
+
+    for dimension_name, words in DIMENSION_WORDS.items():
+        before = rf"\b(?:{DIMENSION_BEFORE})\s+(?:{words})\b"
+        after = rf"\b(?:le|la|les)\s+(?:{words})\s+(?:{DIMENSION_AFTER})\b"
+
+        mentioned = re.search(before, text) or re.search(after, text)
+
+        if dimension_name == "mois" and any(
+            re.search(trigger, text) for trigger in MONTH_TRIGGERS
+        ):
+            mentioned = True
+
+        if mentioned:
+            names.append(dimension_name)
+
+    return names
+
 
 def parse_question(question: str):
     """Transforme une question simple en QueryIntent."""
 
-    text = question.lower()
+    text = normalize(question)
 
     # ---------------------------------------------------------
     # 0. Détection des analyses non supportées
     # ---------------------------------------------------------
 
-    causal_terms = [
-        "causé",
-        "cause",
-        "causer",
-        "pourquoi",
-        "impact",
-        "influence",
-        "responsable",
-    ]
-
-    forecast_terms = [
-        "prévoir",
-        "prévision",
-        "prévisions",
-        "prédire",
-        "prédiction",
-        "prévisionnel",
-        "sera",
-        "seront",
-        "prochain mois",
-        "mois prochain",
-    ]
-
-    if any(term in text for term in causal_terms):
+    if any(normalize(term) in text for term in CAUSAL_TERMS):
         raise ValueError(
             "Analyse causale non supportée : "
             "Ask the Data ne permet pas d'attribuer une causalité "
             "à partir des données disponibles."
         )
 
-    if any(term in text for term in forecast_terms):
+    if any(normalize(term) in text for term in FORECAST_TERMS):
         raise ValueError(
             "Prévision non supportée : "
             "Ask the Data fournit uniquement des analyses "
@@ -57,126 +239,125 @@ def parse_question(question: str):
     # 1. Résolution de la métrique
     # ---------------------------------------------------------
 
-    metric = None
+    metrics = _detect_metrics(text)
+    dimension_names = _detect_dimensions(text)
 
-    metric_terms = [
-        # Marketing
-        "dépenses marketing",
-        "depenses marketing",
-        "dépense marketing",
-        "depense marketing",
-        "dépensé",
-        "depense",
-        "dépenses",
-        "spend",
-        "budget dépensé",
-        "budget depense",
+    product = _single_or_list(_find_all(PRODUCT_ALIASES, resolve_product, text))
+    channel = _single_or_list(_find_all(CHANNEL_ALIASES, resolve_channel, text))
 
-        # Chiffre d'affaires
-        "chiffre d'affaires",
-        "chiffre d affaire",
-        "revenus",
-        "ca",
+    # Sans mot de métrique, le sujet de la question la désigne :
+    # « Combien de bissap en mai ? », « Quel produit marche le mieux ? »
+    # → chiffre d'affaires ; « Compare Meta et TikTok » → dépenses.
+    if not metrics and (product or PRODUCT_DIMENSIONS & set(dimension_names)):
+        metrics = ["ca_net"]
 
-        # Produit
-        "mix produit",
-        "mix produit mensuel",
-    ]
+    if not metrics and channel:
+        metrics = ["spend_marketing"]
 
-    for term in metric_terms:
-        if term in text:
-            metric = resolve_metric_alias(term)
-            break
-
-    unsupported_metrics = [
-        "roi",
-        "retour sur investissement",
-        "coût par litre",
-        "cout par litre",
-        "chiffre d'affaires livraison",
-        "ca livraison",
-    ]
-
-    for unsupported in unsupported_metrics:
-        if unsupported in text:
+    for unsupported in UNSUPPORTED_METRICS:
+        if _contains(unsupported, text):
             raise ValueError(
                 f"Métrique non supportée : '{unsupported}'. "
                 "Cette métrique n'est pas définie dans le semantic layer."
             )
-    
-    if metric is None:
+
+    if not metrics:
         raise ValueError(
             "Question hors périmètre : "
             "aucune métrique prise en charge n'a été identifiée."
         )
 
+    # La première métrique citée porte la question ; les suivantes
+    # (« les ventes et les dépenses ») sont traitées par le service.
+    metric, other_metrics = metrics[0], metrics[1:]
+
     # ---------------------------------------------------------
     # 2. Résolution de la période
     # ---------------------------------------------------------
 
-    month = extract_month(question)
+    since, since_month_of_year = extract_since(question)
     relative_months = extract_relative_months(question)
 
-    if month and relative_months:
+    month = month_of_year = None
+
+    # « depuis janvier » : le mois cité est un point de départ, pas un filtre.
+    if not (since or since_month_of_year):
+        month = extract_month(question)
+
+        # « en mai » sans année : résolu plus tard d'après les données.
+        month_of_year = None if month else extract_month_without_year(question)
+
+        # « le mois dernier » : dernier mois disponible, résolu de la même façon.
+        if not month and not month_of_year and not relative_months and mentions_latest_month(question):
+            month_of_year = LATEST_MONTH
+
+    periods = [
+        bool(month or month_of_year),
+        bool(since or since_month_of_year),
+        bool(relative_months),
+    ]
+
+    if sum(periods) > 1:
         raise ValueError(
             "Période ambiguë : la question contient à la fois "
             "un mois précis et une période relative."
         )
 
     # ---------------------------------------------------------
-    # 3. Résolution du canal
+    # 3. Résolution des dimensions
     # ---------------------------------------------------------
 
-    channel = None
+    # Plusieurs produits ou canaux cités (« compare le bissap et le
+    # gingembre ») : on découpe par cet axe, limité aux éléments cités.
+    if isinstance(product, list) and "produit" not in dimension_names:
+        dimension_names.insert(0, "produit")
 
-    for alias in CHANNEL_ALIASES:
-        pattern = rf"\b{re.escape(alias)}\b"
+    if isinstance(channel, list) and "canal" not in dimension_names:
+        dimension_names.insert(0, "canal")
 
-        if re.search(pattern, text):
-            channel = resolve_channel(alias)
-            break
+    # « Sur quoi avons-nous le plus dépensé ? » : par canal.
+    if (
+        metric == "spend_marketing"
+        and "canal" not in dimension_names
+        and any(re.search(trigger, text) for trigger in CHANNEL_TRIGGERS)
+    ):
+        dimension_names.insert(0, "canal")
 
-        # ---------------------------------------------------------
-    # 4. Résolution des dimensions
+    # « Quel est le mix produit ? » : le mix est une répartition par
+    # produit, sauf si la question vise un seul produit ou un format.
+    if (
+        metric == "mix_produit"
+        and not isinstance(product, str)
+        and not PRODUCT_DIMENSIONS & set(dimension_names)
+    ):
+        dimension_names.append("produit")
+
+    if metric == "ca_net" and (product or PRODUCT_DIMENSIONS & set(dimension_names)):
+        metric = "mix_produit"
+
+    metric = resolve_metric(metric)
+
+    # Un filtre produit exige une métrique découpable par produit
+    # (sinon : erreur « dimension 'product' non disponible »).
+    if product:
+        resolve_dimension("produit", metric)
+
+    dimensions = [
+        resolve_dimension(dimension_name, metric)
+        for dimension_name in dimension_names
+    ]
+
+    # ---------------------------------------------------------
+    # 4. Classement (« le canal qui dépense le plus »)
     # ---------------------------------------------------------
 
-    dimensions = []
+    comparison = None
 
-    dimension_terms = {
-        "mois": [
-            "par mois",
-            "chaque mois",
-            "mensuel",
-        ],
-        "canal": [
-            "par canal",
-            "par canaux",
-        ],
-        "produit": [
-            "par produit",
-            "par produits",
-        ],
-        "plateforme": [
-            "par plateforme",
-            "par plateformes",
-        ],
-        "commune": [
-            "par commune",
-            "par communes",
-        ],
-        "format": [
-            "par format",
-            "par formats",
-        ],
-    }
-
-    for dimension_name, terms in dimension_terms.items():
-        if any(term in text for term in terms):
-            resolved_dimension = resolve_dimension(
-                dimension_name,
-                metric,
-            )
-            dimensions.append(resolved_dimension)
+    if dimensions:
+        for direction, terms in COMPARISON_TERMS.items():
+            if any(_contains(term, text) for term in terms):
+                comparison = direction
+                break
 
     # ---------------------------------------------------------
     # 5. Construction de l'intention
@@ -189,6 +370,12 @@ def parse_question(question: str):
         month=month,
         channel=channel,
         relative_months=relative_months,
+        comparison=comparison,
+        product=product,
+        month_of_year=month_of_year,
+        since=since,
+        since_month_of_year=since_month_of_year,
+        other_metrics=other_metrics,
     )
 
 

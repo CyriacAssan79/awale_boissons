@@ -2,8 +2,19 @@ from __future__ import annotations
 
 from .semantic_layer import get_metric
 from .intent import QueryIntent
-from .filters import resolve_channel
+from .filters import resolve_channel, resolve_product
 from .periods import validate_month
+
+
+def _value_condition(column: str, value, resolve) -> str:
+    """`col = 'x'` ou `col IN ('x', 'y')`, chaque valeur étant validée."""
+    values = value if isinstance(value, list) else [value]
+    resolved = [resolve(v) for v in values]
+
+    if len(resolved) == 1:
+        return f"{column} = '{resolved[0]}'"
+
+    return f"{column} IN (" + ", ".join(f"'{v}'" for v in resolved) + ")"
 
 
 def build_sql(intent: QueryIntent) -> str:
@@ -46,6 +57,11 @@ SELECT
 FROM {model}
 """
 
+    if "month_of_year" in intent.filters or "since_month_of_year" in intent.filters:
+        raise ValueError(
+            "Mois sans année : l'année doit être résolue avant la construction du SQL."
+        )
+
     conditions = []
 
     if "month" in intent.filters:
@@ -68,6 +84,11 @@ FROM {model}
             f"AND month < DATE '{end_date}'"
         )
 
+    if "since" in intent.filters:
+        since = validate_month(intent.filters["since"])
+
+        conditions.append(f"month >= DATE '{since}-01'")
+
     if intent.relative_months is not None:
         if intent.relative_months <= 0:
             raise ValueError(
@@ -87,10 +108,20 @@ FROM {model}
         )
 
     if "channel" in intent.filters:
-        channel = resolve_channel(intent.filters["channel"])
+        conditions.append(
+            _value_condition("channel", intent.filters["channel"], resolve_channel)
+        )
+
+    if "product" in intent.filters:
+        if "product" not in allowed_dimensions:
+            raise ValueError(
+                f"La dimension 'product' n'est pas disponible "
+                f"pour la métrique '{intent.metric}'. "
+                f"Dimensions disponibles : {allowed_dimensions}"
+            )
 
         conditions.append(
-            f"channel = '{channel}'"
+            _value_condition("product", intent.filters["product"], resolve_product)
         )
 
     if conditions:

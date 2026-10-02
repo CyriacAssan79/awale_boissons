@@ -34,6 +34,33 @@ def resolve_channel(term: str) -> str:
     return CHANNEL_ALIASES[normalized]
 
 
+PRODUCT_ALIASES = {
+    "bissap": "bissap",
+    "bouye": "bouye",
+    "gingembre": "gingembre",
+    "ginger": "gingembre",
+}
+
+
+ALLOWED_PRODUCTS = tuple(
+    sorted(set(PRODUCT_ALIASES.values()))
+)
+
+
+def resolve_product(term: str) -> str:
+    """Résout un alias vers un produit autorisé."""
+
+    normalized = term.strip().lower()
+
+    if normalized not in PRODUCT_ALIASES:
+        raise ValueError(
+            f"Produit inconnu : '{term}'. "
+            f"Produits disponibles : {', '.join(ALLOWED_PRODUCTS)}"
+        )
+
+    return PRODUCT_ALIASES[normalized]
+
+
 def is_valid_channel(channel: str) -> bool:
     """Vérifie qu'un canal est autorisé."""
 

@@ -85,3 +85,88 @@ def test_sql_multi_dimensions():
     assert "month" in sql
     assert "product" in sql
     assert "GROUP BY month, product" in sql
+
+def test_sql_filtre_produit():
+    intent = build_intent(
+        question="Le bissap a rapporté combien en mai 2026 ?",
+        metric="mix_produit",
+        month="2026-05",
+        product="bissap",
+    )
+
+    sql = build_sql(intent)
+
+    assert "product = 'bissap'" in sql
+
+
+def test_sql_injection_produit_rejetee():
+    intent = build_intent(
+        question="test",
+        metric="mix_produit",
+        product="bissap'; DROP TABLE mart_product_mix_monthly; --",
+    )
+
+    try:
+        build_sql(intent)
+        assert False, "L'injection SQL aurait dû être rejetée."
+    except ValueError as exc:
+        assert "Produit inconnu" in str(exc)
+
+
+def test_sql_mois_sans_annee_non_resolu_rejete():
+    intent = build_intent(question="test", metric="ca_net", month_of_year="05")
+
+    try:
+        build_sql(intent)
+        assert False, "Un mois sans année aurait dû être rejeté."
+    except ValueError as exc:
+        assert "Mois sans année" in str(exc)
+
+
+def test_sql_plusieurs_produits():
+    intent = build_intent(
+        question="Compare le bissap et le gingembre",
+        metric="mix_produit",
+        dimension="product",
+        product=["bissap", "gingembre"],
+    )
+
+    sql = build_sql(intent)
+
+    assert "product IN ('bissap', 'gingembre')" in sql
+    assert "GROUP BY product" in sql
+
+
+def test_sql_injection_dans_une_liste_rejetee():
+    intent = build_intent(
+        question="test",
+        metric="spend_marketing",
+        dimension="channel",
+        channel=["Meta", "x') OR 1=1 --"],
+    )
+
+    try:
+        build_sql(intent)
+        assert False, "L'injection SQL aurait dû être rejetée."
+    except ValueError as exc:
+        assert "Canal inconnu" in str(exc)
+
+
+def test_sql_depuis():
+    intent = build_intent(
+        question="Le CA depuis mars 2026",
+        metric="ca_net",
+        since="2026-03",
+    )
+
+    assert "month >= DATE '2026-03-01'" in build_sql(intent)
+
+
+def test_sql_depuis_injection_rejetee():
+    intent = build_intent(question="test", metric="ca_net", since="2026-03' OR 1=1 --")
+
+    try:
+        build_sql(intent)
+        assert False, "L'injection SQL aurait dû être rejetée."
+    except ValueError as exc:
+        assert "Mois invalide" in str(exc)

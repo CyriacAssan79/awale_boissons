@@ -31,6 +31,10 @@ METRIC_ALIASES = {
     "dépenses": "spend_marketing",
 
     "spend": "spend_marketing",
+    "dépense": "spend_marketing",
+    "depenses": "spend_marketing",
+    "budget": "spend_marketing",
+    "budgets": "spend_marketing",
     "budget dépensé": "spend_marketing",
     "budget depense": "spend_marketing",
 

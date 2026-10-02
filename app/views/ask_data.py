@@ -17,8 +17,9 @@ HELP = (
     "<ul>"
     "<li><b>Métriques</b> : chiffre d'affaires net, dépenses marketing, mix produit.</li>"
     "<li><b>Découpages</b> : par mois, par canal, par produit, par format (selon la métrique).</li>"
-    "<li><b>Filtres</b> : un mois précis (« en juin 2026 »), une période relative "
-    "(« ces 3 derniers mois »), un canal (Meta, TikTok, Google, Radio…).</li>"
+    "<li><b>Filtres</b> : un mois (« en juin 2026 », ou « en mai » pour le plus récent), "
+    "une période relative (« ces 3 derniers mois », « le dernier trimestre »), "
+    "un canal (Meta, TikTok, Google, Radio…), un produit (bissap, bouye, gingembre).</li>"
     "<li><b>Hors périmètre</b> : les questions causales (« quel canal a causé… »), "
     "les prévisions et les métriques non définies (ROI, coût par litre…) "
     "sont refusées plutôt que d'inventer une réponse.</li>"
@@ -33,7 +34,6 @@ EXAMPLES = [
     "Combien avons-nous dépensé sur Meta en juin 2026 ?",
     "Quel est le spend par canal ?",
     "Donne moi les dépenses publicitaires par canal ces 3 derniers mois",
-    "Quel est le mix produit par mois et par produit ?",
 ]
 
 
@@ -196,9 +196,11 @@ def answer_question(question: str) -> dict:
 
     return {
         "question": question,
-        "answer": response.answer,
+        "answer": response.narrative or response.answer,
         "intent": response.intent,
         "result": response.result,
+        # Autres métriques citées (« les ventes et les dépenses »).
+        "extras": [(part.intent, part.result) for part in response.extras],
     }
 
 
@@ -206,7 +208,7 @@ def ask_suggestion(suggestion: str) -> None:
     st.session_state[PENDING_KEY] = suggestion
 
 
-def result_chart(intent, result: pd.DataFrame) -> None:
+def result_chart(intent, result: pd.DataFrame, key: str) -> None:
     """Graphique simple lorsque la réponse est découpée par une ou deux dimensions."""
     dimensions = [d for d in intent.dimensions if d in result.columns]
 
@@ -232,7 +234,8 @@ def result_chart(intent, result: pd.DataFrame) -> None:
         color_discrete_sequence=None if color else [BISSAP],
     )
     fig.update_layout(xaxis_title=None, yaxis_title=None)
-    show_chart(fig, height=320)
+    # Clé obligatoire : deux réponses identiques donneraient le même graphique.
+    show_chart(fig, height=320, key=key)
 
 
 def show_entry(index: int, entry: dict) -> None:
@@ -255,7 +258,11 @@ def show_entry(index: int, entry: dict) -> None:
                 )
         else:
             st.markdown(entry["answer"].replace("\n", "  \n"))
-            result_chart(entry["intent"], entry["result"])
+            if entry["result"] is not None:
+                result_chart(entry["intent"], entry["result"], key=f"ask_chart_{index}")
+
+            for part_index, (intent, result) in enumerate(entry.get("extras", [])):
+                result_chart(intent, result, key=f"ask_chart_{index}_{part_index}")
 
 
 section(

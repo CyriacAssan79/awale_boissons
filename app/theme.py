@@ -103,13 +103,14 @@ def _register_plotly_template() -> None:
 _register_plotly_template()
 
 
-def show_chart(fig: go.Figure, height: int = 340) -> None:
+def show_chart(fig: go.Figure, height: int = 340, key: str | None = None) -> None:
     fig.update_layout(height=height)
     st.plotly_chart(
         fig,
         width="stretch",
         theme=None,
         config={"displayModeBar": False},
+        key=key,
     )
 
 

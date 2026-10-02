@@ -92,3 +92,41 @@ def test_parse_question_periode_relative_non_supportee():
     assert intent.metric == "spend_marketing"
     assert intent.dimensions == ["channel"]
     assert intent.filters == {}
+
+def test_ca_ne_correspond_pas_a_canal():
+    # « ca » ne doit pas être trouvé dans « canal ».
+    intent = parse_question(
+        "Donne moi le canal qui consomme le plus dans le budget"
+    )
+
+    assert intent.metric == "spend_marketing"
+    assert intent.dimensions == ["channel"]
+    assert intent.comparison == "max"
+
+
+def test_roi_ne_correspond_pas_a_trois():
+    intent = parse_question("Quel est le spend par canal ces trois derniers mois ?")
+
+    assert intent.metric == "spend_marketing"
+
+
+def test_classement_le_moins():
+    intent = parse_question("Quel canal dépense le moins ?")
+
+    assert intent.metric == "spend_marketing"
+    assert intent.dimensions == ["channel"]
+    assert intent.comparison == "min"
+
+
+def test_mois_le_plus_eleve():
+    intent = parse_question("Quel est le mois où le CA est le plus élevé ?")
+
+    assert intent.metric == "ca_net"
+    assert intent.dimensions == ["month"]
+    assert intent.comparison == "max"
+
+
+def test_pas_de_classement_sans_decoupage():
+    intent = parse_question("Quel est le CA net le plus récent ?")
+
+    assert intent.comparison is None

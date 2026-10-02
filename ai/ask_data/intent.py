@@ -9,10 +9,13 @@ class QueryIntent:
 
     metric: str | None = None
     dimensions: list[str] = field(default_factory=list)
-    filters: dict[str, str] = field(default_factory=dict)
+    # Valeur simple, ou liste pour comparer plusieurs produits / canaux.
+    filters: dict[str, str | list[str]] = field(default_factory=dict)
     comparison: str | None = None
     relative_months: int | None = None
     question: str = ""
+    # Autres métriques citées (« les ventes et les dépenses »).
+    other_metrics: list[str] = field(default_factory=list)
 
 def build_intent(
     question: str,
@@ -20,8 +23,14 @@ def build_intent(
     dimension: str | None = None,
     dimensions: list[str] | None = None,
     month: str | None = None,
-    channel: str | None = None,
+    channel: str | list[str] | None = None,
     relative_months: int | None = None,
+    comparison: str | None = None,
+    product: str | list[str] | None = None,
+    month_of_year: str | None = None,
+    since: str | None = None,
+    since_month_of_year: str | None = None,
+    other_metrics: list[str] | None = None,
 ) -> QueryIntent:
     resolved_dimensions = []
 
@@ -42,12 +51,29 @@ def build_intent(
     if channel:
         filters["channel"] = channel
 
+    if product:
+        filters["product"] = product
+
+    # Mois cité sans année (« en mai ») : l'année est fixée par le service,
+    # d'après les données disponibles, avant la construction du SQL.
+    if month_of_year:
+        filters["month_of_year"] = month_of_year
+
+    # « depuis mars 2026 » / « depuis mars » (année résolue par le service).
+    if since:
+        filters["since"] = since
+
+    if since_month_of_year:
+        filters["since_month_of_year"] = since_month_of_year
+
     return QueryIntent(
         metric=metric,
         dimensions=resolved_dimensions,
         filters=filters,
         question=question,
         relative_months=relative_months,
+        comparison=comparison,
+        other_metrics=list(other_metrics or []),
     )
 
 if __name__ == "__main__":
