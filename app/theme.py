@@ -472,6 +472,26 @@ _CSS = f"""
     border-bottom: none;
 }}
 
+/* ---- Conversation (Ask the Data) ---- */
+[class*="st-key-chat_user_"] [data-testid="stChatMessage"] {{
+    flex-direction: row-reverse;
+    width: fit-content;
+    max-width: 75%;
+    margin-left: auto;
+    background: rgba(156, 31, 63, .08);
+    border-radius: 16px 16px 4px 16px;
+}}
+[class*="st-key-chat_user_"] [data-testid="stChatMessage"] p {{
+    text-align: right;
+}}
+[class*="st-key-chat_assistant_"] [data-testid="stChatMessage"] {{
+    max-width: 85%;
+    margin-right: auto;
+    background: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: 16px 16px 16px 4px;
+}}
+
 /* ---- Alertes ---- */
 [data-testid="stAlert"] {{
     border-radius: 14px;

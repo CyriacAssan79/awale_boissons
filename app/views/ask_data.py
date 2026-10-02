@@ -1,15 +1,16 @@
+import re
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from ai.ask_data.answer import format_answer
-from ai.ask_data.question_parser import parse_question
-from ai.ask_data.sql_builder import build_sql
-from common import safe_query
+from ai.ask_data.filters import ALLOWED_CHANNELS
+from ai.ask_data.service import run_ask_data
 from theme import BISSAP, month_label, section, show_chart
 
 
 HISTORY_KEY = "ask_data_history"
+PENDING_KEY = "ask_data_pending"
 
 # Infobulle du titre : une seule ligne HTML, une ligne vide casserait le rendu.
 HELP = (
@@ -36,30 +37,173 @@ EXAMPLES = [
 ]
 
 
+# ---------------------------------------------------------------------
+# MESSAGES D'ERREUR
+# ---------------------------------------------------------------------
+# Le pipeline renvoie des messages techniques (vérifiés par les tests) :
+# ils sont traduits ici en langage courant, avec une question à essayer.
+
+METRIC_LABELS = {
+    "ca_net": "le chiffre d'affaires",
+    "spend_marketing": "les dépenses marketing",
+    "mix_produit": "le mix produit",
+}
+
+DIMENSION_LABELS = {
+    "month": "par mois",
+    "channel": "par canal",
+    "product": "par produit",
+    "format": "par format",
+    "platform": "par plateforme",
+    "commune": "par commune",
+    "product_sku": "par référence produit",
+    "sale_date": "par jour",
+    "pos_key": "par point de vente",
+}
+
+UNSUPPORTED_LABELS = {
+    "roi": "le retour sur investissement (ROI)",
+    "retour sur investissement": "le retour sur investissement (ROI)",
+    "coût par litre": "le coût par litre vendu",
+    "cout par litre": "le coût par litre vendu",
+    "chiffre d'affaires livraison": "le chiffre d'affaires de la livraison",
+    "ca livraison": "le chiffre d'affaires de la livraison",
+}
+
+AVAILABLE_METRICS = (
+    "Je peux vous renseigner sur le chiffre d'affaires, "
+    "les dépenses marketing et le mix produit."
+)
+
+
+def _join(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " ou " + items[-1]
+
+
+def friendly_error(error: str) -> dict:
+    """Traduit une erreur du pipeline en message compréhensible par tous."""
+
+    if error.startswith("Analyse causale"):
+        return {
+            "title": "Je ne peux pas dire ce qui a provoqué un résultat.",
+            "body": "Les données montrent ce qui s'est passé, pas pourquoi. "
+            "Comparer les chiffres côte à côte peut toutefois vous aider "
+            "à vous faire une idée.",
+            "suggestion": "Quel est le spend par canal ?",
+        }
+
+    if error.startswith("Prévision"):
+        return {
+            "title": "Je ne fais pas de prévisions.",
+            "body": "Je réponds uniquement à partir des chiffres déjà "
+            "enregistrés. Regarder l'évolution des derniers mois peut "
+            "donner une tendance.",
+            "suggestion": "Quel est le CA net par mois ?",
+        }
+
+    if error.startswith("Métrique non supportée"):
+        term = re.search(r"'(.+?)'", error)
+        label = UNSUPPORTED_LABELS.get(term.group(1) if term else "", "cet indicateur")
+        return {
+            "title": "Cet indicateur n'est pas encore disponible.",
+            "body": f"Je ne sais pas encore calculer {label}. {AVAILABLE_METRICS}",
+            "suggestion": "Quel est le spend par canal ?",
+        }
+
+    if error.startswith("Question hors périmètre"):
+        return {
+            "title": "Je n'ai pas compris quel chiffre vous cherchez.",
+            "body": f"{AVAILABLE_METRICS} Précisez lequel vous intéresse.",
+            "suggestion": "Quel est le CA net par mois ?",
+        }
+
+    dimension = re.search(
+        r"dimension '(\w+)'.*métrique '(\w+)'.*Dimensions disponibles : \[(.*)\]",
+        error,
+    )
+    if dimension:
+        asked, metric, allowed = dimension.groups()
+        allowed = [
+            DIMENSION_LABELS[d]
+            for d in re.findall(r"'(\w+)'", allowed)
+            if d in DIMENSION_LABELS
+        ]
+        body = (
+            f"Il n'est pas possible d'afficher {METRIC_LABELS.get(metric, 'cet indicateur')} "
+            f"{DIMENSION_LABELS.get(asked, 'de cette façon')}."
+        )
+        if allowed:
+            body += f" Découpages disponibles : {_join(allowed)}."
+        return {
+            "title": "Ce découpage n'est pas disponible.",
+            "body": body,
+            "suggestion": None,
+        }
+
+    if error.startswith("Période ambiguë"):
+        return {
+            "title": "La question contient deux périodes différentes.",
+            "body": "Indiquez soit un mois précis (« en juin 2026 »), soit une "
+            "période récente (« ces 3 derniers mois »), mais pas les deux.",
+            "suggestion": "Quel est le spend par canal ces 3 derniers mois ?",
+        }
+
+    if error.startswith("Mois invalide") or "nombre de mois" in error:
+        return {
+            "title": "Je n'ai pas reconnu la période demandée.",
+            "body": "Écrivez le mois en toutes lettres suivi de l'année "
+            "(« en juin 2026 ») ou un nombre de mois "
+            "(« ces 3 derniers mois »).",
+            "suggestion": "Quel est le CA net en juin 2026 ?",
+        }
+
+    if error.startswith("Canal inconnu"):
+        return {
+            "title": "Je ne connais pas ce canal.",
+            "body": f"Les canaux suivis sont : {', '.join(ALLOWED_CHANNELS)}.",
+            "suggestion": "Quel est le spend par canal ?",
+        }
+
+    return {
+        "title": "Je n'ai pas pu répondre à cette question.",
+        "body": "Essayez de la reformuler plus simplement, en précisant "
+        "l'indicateur et la période qui vous intéressent.",
+        "suggestion": "Quel est le CA net par mois ?",
+    }
+
+
+DATA_UNAVAILABLE = {
+    "title": "Les données ne sont pas accessibles pour le moment.",
+    "body": "Réessayez dans quelques instants. Si le problème persiste, "
+    "contactez l'équipe data.",
+    "suggestion": None,
+}
+
+
 def answer_question(question: str) -> dict:
-    """Exécute le pipeline Ask the Data et garde les étapes pour l'affichage."""
+    """Exécute le pipeline Ask the Data et prépare les données pour l'affichage."""
     try:
-        intent = parse_question(question)
-        sql = build_sql(intent)
-    except ValueError as exc:
-        return {"question": question, "error": str(exc)}
+        response = run_ask_data(question)
+    except Exception:
+        # Base absente ou verrouillée : le pipeline ne gère que les ValueError.
+        return {"question": question, "error": DATA_UNAVAILABLE}
 
-    # Requête exécutée sur la connexion partagée du dashboard (mise en cache).
-    result = safe_query(sql)
-
-    if result is None:
+    if response.error:
         return {
             "question": question,
-            "error": "Les données nécessaires ne sont pas disponibles. "
-            "Relancez le pipeline (python run_pipeline.py).",
+            "error": friendly_error(response.error),
         }
 
     return {
         "question": question,
-        "answer": format_answer(intent, result),
-        "intent": intent,
-        "result": result,
+        "answer": response.answer,
+        "intent": response.intent,
+        "result": response.result,
     }
+
+
+def ask_suggestion(suggestion: str) -> None:
+    st.session_state[PENDING_KEY] = suggestion
 
 
 def result_chart(intent, result: pd.DataFrame) -> None:
@@ -91,13 +235,24 @@ def result_chart(intent, result: pd.DataFrame) -> None:
     show_chart(fig, height=320)
 
 
-def show_entry(entry: dict) -> None:
-    with st.chat_message("user"):
+def show_entry(index: int, entry: dict) -> None:
+    # Conteneurs nommés : le thème aligne la question à droite, la réponse à gauche.
+    with st.container(key=f"chat_user_{index}"), st.chat_message("user"):
         st.markdown(entry["question"])
 
-    with st.chat_message("assistant"):
+    with st.container(key=f"chat_assistant_{index}"), st.chat_message("assistant"):
         if "error" in entry:
-            st.warning(entry["error"])
+            error = entry["error"]
+            st.markdown(f"**{error['title']}**  \n{error['body']}")
+
+            if error["suggestion"]:
+                st.button(
+                    f"Essayer : {error['suggestion']}",
+                    key=f"ask_suggestion_{index}",
+                    icon=":material/lightbulb:",
+                    on_click=ask_suggestion,
+                    args=(error["suggestion"],),
+                )
         else:
             st.markdown(entry["answer"].replace("\n", "  \n"))
             result_chart(entry["intent"], entry["result"])
@@ -133,13 +288,17 @@ for i, example in enumerate(EXAMPLES):
 # CONVERSATION
 # ---------------------------------------------------------------------
 
-question = st.chat_input("Ex. : Quel est le spend par canal ?") or clicked
+question = (
+    st.chat_input("Ex. : Quel est le spend par canal ?")
+    or clicked
+    or st.session_state.pop(PENDING_KEY, None)
+)
 
 if question:
     history.append(answer_question(question))
 
-for entry in history:
-    show_entry(entry)
+for index, entry in enumerate(history):
+    show_entry(index, entry)
 
 if history and st.button("Effacer la conversation", icon=":material/delete:"):
     st.session_state[HISTORY_KEY] = []

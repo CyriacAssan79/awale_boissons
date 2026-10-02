@@ -7,13 +7,6 @@
     "*.xlsx": "duckdb.dataFileViewer",
     "*.duckdb": "duckdb.tableViewer"
   },
-  "duckdb.databases": [
-    {
-      "alias": "awale",
-      "type": "file",
-      "path": "c:\\Users\\KSOMS\\Favorites\\awale_boissons\\data\\awale.duckdb",
-      "attached": false
-    }
-  ],
+  "duckdb.databases": [],
   "duckdb.defaultDatabase": "awale"
 }

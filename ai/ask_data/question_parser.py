@@ -117,6 +117,12 @@ def parse_question(question: str):
     month = extract_month(question)
     relative_months = extract_relative_months(question)
 
+    if month and relative_months:
+        raise ValueError(
+            "Période ambiguë : la question contient à la fois "
+            "un mois précis et une période relative."
+        )
+
     # ---------------------------------------------------------
     # 3. Résolution du canal
     # ---------------------------------------------------------

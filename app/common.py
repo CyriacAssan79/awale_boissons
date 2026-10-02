@@ -12,29 +12,29 @@ from theme import month_label
 DB_PATH = "data/awale.duckdb"
 
 
-@st.cache_resource
 def get_connection():
+    # Connexion courte (pas de cache_resource) : DuckDB pose un verrou
+    # fichier qui bloquerait run_pipeline.py tant que Streamlit tourne.
     return duckdb.connect(DB_PATH, read_only=True)
 
 
 @st.cache_data(ttl=300)
 def load_query(query: str) -> pd.DataFrame:
-    con = get_connection()
-    return con.execute(query).df()
+    with get_connection() as con:
+        return con.execute(query).df()
 
 
 @st.cache_data(ttl=300)
 def table_exists(table_name: str) -> bool:
-    con = get_connection()
-
-    result = con.execute(
-        """
-        SELECT COUNT(*) > 0
-        FROM information_schema.tables
-        WHERE table_name = ?
-        """,
-        [table_name],
-    ).fetchone()
+    with get_connection() as con:
+        result = con.execute(
+            """
+            SELECT COUNT(*) > 0
+            FROM information_schema.tables
+            WHERE table_name = ?
+            """,
+            [table_name],
+        ).fetchone()
 
     return bool(result[0])
 
