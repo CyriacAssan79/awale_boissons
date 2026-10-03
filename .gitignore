@@ -10,4 +10,3 @@ data/awale.duckdb
 dbt/awale.duckdb
 outputs/reports/
 .vscode/mcp.json
-.vscode/mcp.json
