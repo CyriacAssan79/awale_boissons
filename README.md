@@ -27,12 +27,12 @@ RAW → STAGING → INTERMEDIATE → MARTS → DECISION → DASHBOARD
 - **STAGING** : nettoyage / déduplication / normalisation / quality flags
 - **INTERMEDIATE** : réconciliation / calendrier / parsing / enrichissement
 - **MARTS** : Marketing / Sales / WhatsApp / Social / Decision
-- **AI + Decision Layer** : classification des commentaires (Customer Voice) et rapport mensuel
-- **Streamlit Dashboard** : 6 pages accessibles depuis une barre de navigation, dont le rapport mensuel
+- **AI + Decision Layer** : classification des commentaires (Customer Voice), rapport mensuel et questions en français sur les données (Ask the Data)
+- **Streamlit Dashboard** : 7 pages regroupées par rubrique dans la barre latérale, dont le rapport mensuel et Ask the Data
 
 ## 4. Stack technique
 
-Python 3.13 ou 3.14 (versions épinglées dans `requirements.txt`) · pandas · DuckDB · dbt Core + dbt-duckdb · openpyxl · modèles locaux Qwen2.5 (0.5B pour les commentaires, 1.5B pour le rapport) + règles hybrides · Streamlit · Plotly · dbt tests.
+Python 3.13 ou 3.14 (versions épinglées dans `requirements.txt`) · pandas · DuckDB · dbt Core + dbt-duckdb · openpyxl · modèles locaux Qwen2.5 (0.5B pour les commentaires, 1.5B pour le rapport et l'interprétation des questions libres d'Ask the Data) + règles hybrides · Streamlit · Plotly · dbt tests.
 
 ## 5. Sources
 
@@ -61,20 +61,20 @@ Le détail de chaque décision (constat, règle, conséquence sur les chiffres, 
 
 ## 7. IA — Customer Voice
 
-Les commentaires sont enrichis avec `language`, `sentiment`, `theme`, `product` et `is_spam`. Le benchmark utilise **Qwen/Qwen2.5-0.5B-Instruct** sur 50 commentaires annotés humainement. Ces 50 annotations servent à l'évaluation et ne sont pas présentées comme un jeu de fine-tuning.
+Les commentaires sont enrichis avec `language`, `sentiment`, `theme`, `product` et `is_spam`. La version en production (**V4**, 29/09/2026) combine des règles déterministes et **Qwen/Qwen2.5-0.5B-Instruct**, appelé pour ~13 % des commentaires (ceux que les règles ne tranchent pas). Le benchmark humain compte **108 commentaires** : les 50 d'origine et 58 cas que les règles envoient au modèle. Ces annotations servent à l'évaluation et ne sont pas présentées comme un jeu de fine-tuning.
 
-**Évaluation V1 → V2 Hybrid :**
+**Évaluation V4 (108 commentaires annotés) :**
 
-| Dimension       | V1  | V2 Hybrid |
-| --------------- | --- | --------- |
-| Language        | 72% | 22%       |
-| Sentiment       | 54% | 80%       |
-| Theme           | 40% | 78%       |
-| Product         | 58% | 52%       |
-| Spam            | 94% | 88%       |
-| Exact agreement | 8%  | 14%       |
+| Dimension       | Réponse constante | V4 — 50 d'origine | V4 — 58 cas « modèle » | V4 — total 108 |
+| --------------- | ----------------- | ----------------- | ---------------------- | -------------- |
+| Language        | 69 %              | 98 %              | 98 %                   | 98 %           |
+| Sentiment       | 38 %              | 100 %             | 91 %                   | 95 %           |
+| Theme           | 28 %              | 96 %              | 84 %                   | 90 %           |
+| Product         | 44 %              | 98 %              | 97 %                   | 97 %           |
+| Spam            | 97 %              | 100 %             | 100 %                  | 100 %          |
+| Exact agreement | —                 | 94 %              | 78 %                   | 85 %           |
 
-**À lire avec les taux de référence.** Sur ces 50 commentaires, une réponse constante donnerait 72 % en langue, 54 % en sentiment, 22 % en thème, 42 % en produit et 94 % en spam. V1 n'égale que ces taux sur langue, sentiment et spam ; la version hybride progresse sur sentiment, thème et produit mais reste très en dessous en langue (22 % contre 72 %). L'échantillon ne compte que 3 spams. Le champ langue n'est pas utilisable en l'état et la détection de spam est à améliorer : le remplacement du modèle local est prévu (voir `docs/ai_documentation.ipynb` 5).
+**À lire avec les taux de référence.** Sur les 50 commentaires d'origine, les règles tranchent presque tout : ce score mesure surtout les règles. Les 58 cas « modèle » mesurent la partie difficile, où se concentrent les erreurs (sentiment et thème). Le spam ne se juge pas sur ce score : une réponse constante « jamais spam » donne déjà 97 %. Les versions précédentes (V1 : 8 % d'accord exact, V2 hybride : 14 %, sur 50 commentaires) et le détail des erreurs sont dans `docs/ai_documentation.ipynb` 5.
 
 ## 7 bis. IA — Rapport mensuel
 
@@ -105,6 +105,27 @@ marts DuckDB → query_marts.py (brief chiffré) → build_deterministic_report.
 - sans synthèse IA (interrupteur désactivé) : instantané.
 
 Avril, mai et juin passent les contrôles. Janvier bascule sur la synthèse de secours : le modèle y invente une évolution du CA alors que décembre 2025 n'est pas dans les données.
+
+## 7 ter. IA — Ask the Data
+
+La page **Demander à l'IA** du dashboard répond en français à une question sur les ventes, les dépenses marketing ou le mix produit (« Le bissap a rapporté combien en mai ? », « Sur quoi avons-nous le plus dépensé ? », « Compare Meta et TikTok en juin 2026 »).
+
+```
+question → règles (question_parser) ──────────────┐
+             └─ aucune métrique reconnue → Qwen2.5-1.5B (fiche JSON) → contrôles ─┤
+                                                                                 → intention → SQL (semantic_layer.yml) → DuckDB → phrase rédigée en Python
+```
+
+- **Les règles comprennent la grande majorité des questions**, instantanément : métriques (CA net, dépenses marketing, mix produit), découpages (mois, canal, produit, format), filtres (mois avec ou sans année, « depuis mars », « ces 3 derniers mois », « le mois dernier », canaux, produits), comparaisons (« le bissap et le gingembre ») et classements (« le canal qui dépense le plus »).
+- **Le SQL est construit uniquement à partir de `docs/semantic_layer.yml`** : modèle, expression et découpages autorisés de chaque métrique. Mois, canaux et produits sont vérifiés sur des listes fermées avant d'entrer dans la requête (tests d'injection dans `tests/ask_data/`).
+- **La réponse est rédigée par des phrases modèles en Python** (`ai/ask_data/narrative.py`), pas par le modèle : total, premier et dernier, part du total, tendance sur la période, comparaison au mois précédent. Elle décrit ce qui s'est passé, jamais pourquoi.
+- **Refus volontaires** : questions causales (« quel canal a causé… »), prévisions, métriques non définies (ROI, coût par litre…) et découpages indisponibles (dépenses par produit) reçoivent un message clair avec une question à essayer. Ces refus ne sont jamais confiés au modèle.
+- **Qwen n'intervient que si les règles ne reconnaissent aucune métrique** (interrupteur « Comprendre les questions libres (IA) », activé par défaut). Il ne remplit qu'une fiche JSON d'intention : métrique, découpages, classement, période récente, hors sujet. **Les produits, canaux, mois et années sont toujours lus dans la question par les règles** : lors des essais, le modèle ajoutait un canal absent de la question (« Meta ») ou lisait « depuis mars » comme « en mars ». Un classement proposé n'est gardé que si la question contient un mot de comparaison. Chaque valeur est vérifiée ; une fiche invalide garde le refus d'origine. Le modèle n'écrit jamais de SQL et ne voit aucune donnée.
+- **L'interprétation retenue par l'IA est affichée** au-dessus de la réponse, pour que l'utilisateur puisse reformuler.
+
+**Durées mesurées (CPU, 02/10/2026, 8 questions libres)** : questions comprises par les règles, instantanées ; questions confiées à Qwen, **25 à 38 s** chacune ; premier appel de la session, ~50 s de plus pour charger le modèle (partagé avec le rapport mensuel, chargé une seule fois).
+
+Code : `ai/ask_data/` (point d'entrée `service.run_ask_data`). Tests : `tests/ask_data/` (162 tests, modèle simulé, sans téléchargement).
 
 ## 8. Customer Voice — janvier à juin 2026
 
@@ -176,21 +197,24 @@ Le taux de réachat ne compte que les commandes livrées : une commande annulée
 
 ## 11. Allocation proposée — 15 M FCFA
 
-| Canal              | Budget          | Part      |
-| ------------------ | --------------- | --------- |
-| Meta               | 5,55 M FCFA     | 37,0 %    |
-| TikTok             | 3,10 M FCFA     | 20,7 %    |
-| Radio              | 2,00 M FCFA     | 13,3 %    |
-| Google             | 1,90 M FCFA     | 12,7 %    |
-| Influenceurs       | 1,45 M FCFA     | 9,7 %     |
-| Activation terrain | 1,00 M FCFA     | 6,7 %     |
-| **Total**          | **15,0 M FCFA** | **100 %** |
+| Canal              | Budget décidé   | Part      | Calcul de référence |
+| ------------------ | --------------- | --------- | ------------------- |
+| Meta               | 5,50 M FCFA     | 36,7 %    | 5,55 M FCFA         |
+| TikTok             | 3,00 M FCFA     | 20,0 %    | 3,10 M FCFA         |
+| Radio              | 2,00 M FCFA     | 13,3 %    | 2,00 M FCFA         |
+| Google             | 2,00 M FCFA     | 13,3 %    | 1,90 M FCFA         |
+| Influenceurs       | 1,50 M FCFA     | 10,0 %    | 1,45 M FCFA         |
+| Activation terrain | 1,00 M FCFA     | 6,7 %     | 1,00 M FCFA         |
+| **Total**          | **15,0 M FCFA** | **100 %** | **15,0 M FCFA**     |
 
-Calcul (`dbt/models/marts/mart_budget_recommendation_15m.sql`) : un socle de 1 M FCFA par canal
+**Budget décidé (03/10/2026).** Les montants retenus sont le calcul de référence arrondi par tranches de 0,5 M FCFA. Ils sont fixés dans `dbt/dbt_project.yml` (`test_budget_allocation_fcfa`) et deviennent le budget proposé de `mart_budget_recommendation_15m` ; le calcul reste à côté (`computed_budget_fcfa`, colonne « Calcul de référence » du dashboard) pour que l'écart reste visible. Un test dbt vérifie que le total vaut toujours 15 M FCFA, un autre que chaque canal de la variable existe. Vider la variable (`{}`) fait revenir au budget calculé à chaque run.
+
+**Calcul de référence** (`dbt/models/marts/mart_budget_recommendation_15m.sql`) : un socle de 1 M FCFA par canal
 finance l'instrumentation même des canaux les moins mesurés, puis le reliquat (9 M FCFA) est réparti
 au prorata de `part de dépense observée × bonus de qualité d'evidence` (evidence_quality vient de la
-complétude des données, pas de la performance commerciale). Cette allocation se recalcule donc si
-les données du mois prochain changent — ce n'est ni un classement causal, ni un montant figé. Le budget total et le socle par canal sont des paramètres (`total_test_budget_fcfa`, `test_budget_floor_per_channel_fcfa` dans `dbt/dbt_project.yml`).
+complétude des données, pas de la performance commerciale). Ce calcul change si les données du mois
+prochain changent — ce n'est pas un classement causal. Le budget décidé, lui, ne bouge pas tant que la
+variable n'est pas modifiée : le comparer au calcul à chaque cycle. Le budget total et le socle par canal sont des paramètres (`total_test_budget_fcfa`, `test_budget_floor_per_channel_fcfa` dans `dbt/dbt_project.yml`).
 
 **Limite de la base de calcul.** La répartition suit la dépense observée dans l'export campagne, qui sous-représente les canaux saisis à la main : la radio pèse 12,6 % de l'export contre 26,2 % du facturé (plan média), les influenceurs 5,7 % contre 8,3 %, l'activation terrain 0 % contre 13,8 %. L'allocation hérite de ce biais. Le choix de la base (dépense observée ou facturé) est à trancher avec Kômian : voir `docs/business_problem.ipynb` 6 bis.
 
@@ -211,6 +235,7 @@ les données du mois prochain changent — ce n'est ni un classement causal, ni 
 - Les 96 lignes POS identiques (toutes sur l'entrepôt `POS999`) sont conservées : si l'export contenait de vrais doublons, le CA net serait surévalué de 0,50 % (440 600 FCFA). À confirmer auprès du distributeur.
 - Deux cas de points de vente ne sont pas fusionnés sans validation (`Avenue 16` / `Avenue 16 (nouveau)`, probablement un même magasin : 40 magasins au lieu de 41).
 - Le "CA net observé" du dashboard est le CA des points de vente uniquement ; les commandes WhatsApp n'y sont pas incluses.
+- Ask the Data ne connaît que trois métriques (CA net, dépenses marketing, mix produit). « Le produit le plus vendu » est classé par chiffre d'affaires, pas par unités (`unites_vendues` n'est pas encore prise en charge). Le CA par canal n'existe pas dans la couche sémantique (`ca_net` ne se découpe que par mois). Un mois sans année (« en mai ») désigne le plus récent présent dans les données, « le mois dernier » le dernier mois disponible ; la réponse annonce toujours le mois utilisé. Les comparaisons au mois précédent ne signalent pas encore un mois incomplet (avril).
 - Avec les versions de `requirements.txt` sur CPU, le vrai modèle a reproduit à l'identique les prédictions déjà enregistrées sur deux échantillons (12 et 24 commentaires), pas sur les 2 831 : un autre matériel ou d'autres versions peuvent produire des sorties légèrement différentes pour un même commentaire.
 
 ## 14. Reproductibilité
@@ -246,8 +271,8 @@ d'aucune clé API : `openai`, `tenacity` et `python-dotenv` ne servent qu'à la 
 la classification (`ai/classify_comments.py`, non retenue) et sont dans `requirements-dev.txt`.
 
 Première inférence IA : le modèle `Qwen/Qwen2.5-0.5B-Instruct` (~1 Go) est téléchargé une fois
-depuis Hugging Face, puis relu depuis le cache local. Le premier rapport mensuel avec synthèse IA
-télécharge de même `Qwen/Qwen2.5-1.5B-Instruct` (~2,9 Go).
+depuis Hugging Face, puis relu depuis le cache local. Le premier rapport mensuel avec synthèse IA,
+ou la première question libre posée dans Ask the Data, télécharge de même `Qwen/Qwen2.5-1.5B-Instruct` (~2,9 Go).
 
 ### 14.3 Run complet
 
@@ -263,18 +288,19 @@ export du texte des commentaires → inférence IA → rechargement des prédict
 `dbt run` complet → `dbt test`. Options : `--skip-ai` (réutilise les prédictions déjà présentes),
 `--skip-tests`.
 
-Le dashboard s'organise en 6 pages, dans la barre de navigation en haut :
+Le dashboard s'organise en 7 pages, regroupées par rubrique dans la barre latérale :
 
-| Page | Contenu |
-| --- | --- |
-| Vue d'ensemble | Indicateurs globaux et avertissements de couverture |
-| Marketing | Dépenses par canal comparées au plan |
-| Ventes | CA net, couverture des données, mix produit |
-| Voix client | Sentiment, thèmes, produits mentionnés, commandes WhatsApp |
-| Recommandation | Répartition proposée des 15 M FCFA et cadre de test |
-| Rapport IA | Rapport mensuel : créer, mettre à jour, lire et télécharger |
+| Rubrique | Page | Contenu |
+| --- | --- | --- |
+| Tableau de bord | Vue d'ensemble | Indicateurs globaux et avertissements de couverture |
+| Tableau de bord | Marketing | Dépenses par canal comparées au plan |
+| Tableau de bord | Ventes | CA net, couverture des données, mix produit |
+| Tableau de bord | Voix client | Sentiment, thèmes, produits mentionnés, commandes WhatsApp |
+| Décision | Recommandation | Répartition proposée des 15 M FCFA et cadre de test |
+| Intelligence artificielle | Rapport IA | Rapport mensuel : créer, mettre à jour, lire et télécharger |
+| Intelligence artificielle | Demander à l'IA | Questions en français sur les données (Ask the Data, voir 7 ter) |
 
-Le filtre de période (barre latérale) s'applique aux pages Vue d'ensemble, Ventes et Voix client, et se conserve d'une page à l'autre.
+Le filtre de période (barre latérale, sous la navigation) s'applique aux pages Vue d'ensemble, Ventes et Voix client, et se conserve d'une page à l'autre.
 
 Le rapport mensuel peut aussi être produit en ligne de commande :
 
@@ -282,7 +308,7 @@ Le rapport mensuel peut aussi être produit en ligne de commande :
 python -m ai.reporting.generate_report --year 2026 --month 6 --save   # → outputs/reports/rapport_2026_06.md
 ```
 
-**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning ; `pytest` : 66/66 tests (voir 14.5).
+**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning (avant l'ajout, le 03/10/2026, du budget décidé et du test `mart_budget_recommendation_15m_decided_channels`, à rejouer avec `dbt run` puis `dbt test`) ; `pytest` : 228/228 tests, dont 162 pour Ask the Data (03/10/2026, voir 14.5).
 
 Le chargement (`ingestion/load_raw.py`) valide les cinq feuilles et leurs colonnes **avant** d'écrire : une feuille absente, vide ou incomplète interrompt le run avec un message clair, sans modifier la base.
 
@@ -296,8 +322,8 @@ retenté seul, puis signalé ; il n'est **pas** enregistré (rien n'est deviné)
 et il sera retenté au lancement suivant. Les réponses hors vocabulaire ramenées à une valeur par défaut sont
 comptées et affichées (`[ATTENTION]`).
 
-Le prompt est un fichier versionné, `ai/prompts/comment_classifier_v2_hybrid.txt`. Le modifier passe par un
-nouveau fichier (v3, …) et un nouveau passage du benchmark humain.
+Le prompt est un fichier versionné, `ai/prompts/comment_classifier_v4_hybrid.txt` (règles v4.2). Le modifier passe par un
+nouveau fichier (v5, …) et un nouveau passage du benchmark humain.
 
 ### 14.5 Tests automatiques
 
@@ -305,17 +331,19 @@ nouveau fichier (v3, …) et un nouveau passage du benchmark humain.
 pytest
 ```
 
-Quatre familles : reprise, garde-fou et prompt de l'IA (modèle simulé, sans téléchargement) ;
+Cinq familles : reprise, garde-fou et prompt de l'IA (modèle simulé, sans téléchargement) ;
 validation du chargement Excel (feuille absente, vide ou incomplète) ; couche sémantique (chaque
 expression de `docs/semantic_layer.yml` est exécutée contre la base et ses définitions sont comparées
-mot pour mot à celles de `docs/business_problem.ipynb`). Les tests qui lisent la base sont **ignorés,
+mot pour mot à celles de `docs/business_problem.ipynb`) ; Ask the Data (`tests/ask_data/` :
+formulations libres, refus volontaires, SQL et injections, phrases rédigées, interprétation par le
+modèle simulé et repli sur les règles). Les tests qui lisent la base sont **ignorés,
 non validés**, si `data/awale.duckdb` est absente ou verrouillée (fermer l'aperçu DuckDB de l'éditeur).
 
 ### 14.6 Ajouter un nouveau mois
 
 Ajouter les lignes du mois aux feuilles du même fichier Excel, puis relancer `python run_pipeline.py`. Les mois du plan média, les mois de campagne et le calendrier des ventes sont lus dans les données : aucune date n'est écrite en dur. Un mois de ventes reçu incomplet apparaît avec ses jours manquants (et l'avertissement du dashboard) au lieu de passer pour un mois complet.
 
-Les paramètres métier se modifient dans `dbt/dbt_project.yml`, section `vars` : taux EUR→FCFA (`eur_to_fcfa_rate`), budget de test et socle par canal, seuil de montant WhatsApp invraisemblable (`whatsapp_max_plausible_amount_fcfa`).
+Les paramètres métier se modifient dans `dbt/dbt_project.yml`, section `vars` : taux EUR→FCFA (`eur_to_fcfa_rate`), budget de test et socle par canal, budget décidé par canal (`test_budget_allocation_fcfa`, voir 11), seuil de montant WhatsApp invraisemblable (`whatsapp_max_plausible_amount_fcfa`).
 
 ## 15. Structure du repository
 
@@ -324,17 +352,19 @@ awale_boissons/
 ├── .streamlit/
 │   └── config.toml   (thème du dashboard)
 ├── app/
-│   ├── app.py        (point d'entrée : barre de navigation)
-│   ├── common.py     (connexion DuckDB, formats, filtre de période)
+│   ├── app.py        (point d'entrée : navigation par rubrique dans la barre latérale)
+│   ├── common.py     (connexion DuckDB, formats, filtre de période, chargement du modèle Qwen partagé)
 │   ├── theme.py      (palette, CSS, graphiques)
 │   └── views/        (une page par fichier : overview, marketing, sales,
-│                      customers, recommendation, report)
+│                      customers, recommendation, report, ask_data)
 ├── ai/
 │   ├── classify_comments_hybrid.py
 │   ├── prompts/      (prompts versionnés)
 │   ├── evaluation/
-│   └── reporting/    (rapport mensuel : query_marts, build_deterministic_report,
-│                      generate_report, prompts/)
+│   ├── reporting/    (rapport mensuel : query_marts, build_deterministic_report,
+│   │                  generate_report, prompts/)
+│   └── ask_data/     (Ask the Data : question_parser, llm_parser, sql_builder,
+│                      executor, narrative, service…)
 ├── analysis/
 │   ├── export_ai_input.py
 │   └── create_ai_sample.py
@@ -348,8 +378,8 @@ awale_boissons/
 │   ├── tests/
 │   └── dbt_project.yml
 ├── docs/             (business_problem, data_quality, ai_documentation,
-│                      Dictionnaire_de_donnees, Client_Note, Runbook_Mensuel,
-│                      Note_Adoption, semantic_layer.yml)
+│                      dictionnaire_de_donnees, Client_Note, Runbook_Mensuel,
+│                      note_adoption, semantic_layer.yml)
 ├── ingestion/
 │   ├── load_raw.py
 │   └── load_predictions.py
@@ -359,7 +389,7 @@ awale_boissons/
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── run_pipeline.py
-├── tests/            (pytest : IA, chargement, couche sémantique)
+├── tests/            (pytest : IA, chargement, couche sémantique, ask_data/)
 ├── version.ipynb
 └── README.md
 ```
@@ -397,7 +427,7 @@ Avant un run complet :
 
 ```bash
 python ai/classify_comments_hybrid.py --test 10   # 10 commentaires annotés, détail règle/Qwen/humain
-python ai/classify_comments_hybrid.py --bench     # 50 commentaires annotés → model_predictions_hybrid.csv
+python ai/classify_comments_hybrid.py --bench     # tout le benchmark (108 commentaires annotés) → model_predictions_hybrid.csv
 python ai/evaluation/evaluate_classifier.py --model hybrid
 python ai/classify_comments_hybrid.py             # run complet (appelé par run_pipeline.py)
 ```
@@ -431,11 +461,12 @@ Faits observés → qualité des données → observations → signaux → limit
 - WhatsApp
 - Customer Voice IA
 - Benchmark
-- Dashboard Streamlit (6 pages, barre de navigation)
+- Dashboard Streamlit (7 pages, navigation par rubrique dans la barre latérale)
 - Rapport mensuel IA (page du dashboard et `ai/reporting/`, rapports dans `outputs/reports/`)
+- Ask the Data : questions en français sur les données (page « Demander à l'IA » et `ai/ask_data/`)
 - Allocation 15 M FCFA
 - Client Note (recommandation, niveau de confiance, mesures à 90 jours)
 - Runbook mensuel
-- Note d'adoption interne (`docs/Note_Adoption.ipynb`)
+- Note d'adoption interne (`docs/note_adoption.ipynb`)
 - Couche sémantique (`docs/semantic_layer.yml`) et tests automatiques (`tests/`)
 - Prompt de classification versionné (`ai/prompts/`)

@@ -55,9 +55,21 @@ total_recommended = recommendation_view["proposed_budget_fcfa"].sum()
 
 col1, col2 = st.columns([1, 2.2])
 
+# Budget décidé (vars dbt) ou calculé : la colonne n'existe qu'après le dbt run
+# qui a introduit le budget décidé.
+decided = (
+    "allocation_source" in recommendation.columns
+    and (recommendation["allocation_source"] == "décidé").all()
+)
+
 with col1:
     st.metric("Budget total à tester", money(total_recommended))
-    st.caption("Répartition proposée pour un horizon de test de 90 jours.")
+    st.caption(
+        "Répartition décidée pour un horizon de test de 90 jours, à partir du "
+        "calcul de référence arrondi par tranches de 0,5 M FCFA."
+        if decided
+        else "Répartition proposée pour un horizon de test de 90 jours."
+    )
 
 with col2:
     with card("recommendation_chart"):
@@ -91,6 +103,17 @@ with card("recommendation_table"):
             "Canal": recommendation_view["channel"],
             "Budget proposé (FCFA)": recommendation_view["proposed_budget_fcfa"].map(integer),
             "Part (%)": recommendation_view["proposed_share"].map("{:.1f}".format),
+            **(
+                {
+                    "Calcul de référence (FCFA)": recommendation["computed_budget_fcfa"]
+                    .round(0)
+                    .astype(int)
+                    .map(integer)
+                    .values
+                }
+                if decided
+                else {}
+            ),
             "Pourquoi tester ce canal": recommendation_view["allocation_rationale"],
             "Condition de test": recommendation_view["test_condition"],
         }

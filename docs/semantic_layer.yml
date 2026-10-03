@@ -4,6 +4,12 @@
 # dictionnaire commun : le dashboard, les notes client et toute question posée
 # aux données doivent utiliser ces définitions, pas en réécrire.
 #
+# Ask the Data (ai/ask_data/, page « Demander à l'IA ») lit ce fichier pour
+# construire ses requêtes : modele, expression et dimensions d'une métrique
+# déterminent ce qu'on peut lui demander. Retirer une dimension rend le
+# découpage correspondant indisponible (message « découpage non disponible ») ;
+# en ajouter une le rend possible sans changer le code.
+#
 # Les définitions marquées `kpi_partie_a` sont recopiées MOT POUR MOT depuis
 # docs/business_problem.ipynb (section 5). Le test tests/test_semantic_layer.py
 # vérifie cette égalité et exécute chaque expression contre la base : une
@@ -243,6 +249,7 @@ metriques:
     unite: FCFA
     precautions:
       - Budget de test pondéré par la dépense observée et la qualité de mesure, pas un ROI. Total égal au paramètre total_test_budget_fcfa.
+      - Montants décidés (var test_budget_allocation_fcfa, arbitrage du 03/10/2026) lorsqu'ils sont renseignés ; le calcul de référence reste dans computed_budget_fcfa.
 
 # KPI que le jeu de données ne peut PAS soutenir honnêtement, et ce qu'il faudrait.
 non_soutenus:

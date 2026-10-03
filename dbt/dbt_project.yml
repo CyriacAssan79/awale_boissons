@@ -17,6 +17,20 @@ vars:
   total_test_budget_fcfa: 15000000
   test_budget_floor_per_channel_fcfa: 1000000
 
+  # Budget décidé par canal (arbitrage du 03/10/2026 : calcul de référence
+  # arrondi par tranches de 0,5 M FCFA). Il remplace le calcul comme budget
+  # proposé ; le calcul reste visible à côté (computed_budget_fcfa).
+  # Chaque canal doit y figurer et le total doit valoir total_test_budget_fcfa,
+  # sinon le test dbt mart_budget_recommendation_15m_total échoue.
+  # Vider ({}) pour revenir au budget calculé à chaque run.
+  test_budget_allocation_fcfa:
+    Meta: 5500000
+    TikTok: 3000000
+    Radio: 2000000
+    Google: 2000000
+    Influenceurs: 1500000
+    Activation terrain: 1000000
+
   # Au-dessus de ce montant, un amount_fcfa WhatsApp est jugé invraisemblable
   # (panier de 2 à 4 bouteilles à ~1 500 FCFA). Sur le jeu de démarrage, le plus
   # grand montant plausible est 12 600 et le plus petit aberrant 1 400 000.

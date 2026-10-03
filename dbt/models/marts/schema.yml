@@ -40,13 +40,19 @@ models:
 
   - name: mart_budget_recommendation_15m
     description: >
-      Allocation calculée des 15 M FCFA de budget de test : socle
-      d'instrumentation par canal + reliquat réparti au prorata de
-      (part de dépense observée x qualité d'evidence). Recalculée à
-      chaque run — jamais un montant figé.
+      Allocation des 15 M FCFA de budget de test. Calcul de référence :
+      socle d'instrumentation par canal + reliquat réparti au prorata de
+      (part de dépense observée x qualité d'evidence), recalculé à chaque
+      run. Si la var test_budget_allocation_fcfa est renseignée, ses
+      montants (arbitrage humain) deviennent le budget proposé ; le calcul
+      reste dans computed_budget_fcfa.
     columns:
       - name: proposed_budget_fcfa
-        description: "Budget proposé par canal, calculé — somme toujours égale à 15 000 000."
+        description: "Budget proposé par canal : décidé s'il est renseigné dans les vars, sinon calculé. Somme toujours égale à 15 000 000."
+      - name: computed_budget_fcfa
+        description: "Calcul de référence (socle + prorata), conservé même quand un budget décidé le remplace."
+      - name: allocation_source
+        description: "« décidé » (var test_budget_allocation_fcfa) ou « calculé »."
       - name: allocation_rationale
         description: "Justification qualitative de l'allocation pour ce canal."
       - name: test_condition

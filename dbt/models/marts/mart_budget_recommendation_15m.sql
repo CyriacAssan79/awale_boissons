@@ -1,16 +1,22 @@
 {{ config(materialized='table') }}
 
 -- ======================================================================
--- Allocation des 15 M FCFA — calculée, pas fixée en dur.
+-- Allocation des 15 M FCFA.
 --
--- Principe : chaque canal reçoit un socle fixe pour financer son
--- instrumentation (même les canaux les moins mesurés), puis le reliquat
+-- Calcul de référence : chaque canal reçoit un socle fixe pour financer
+-- son instrumentation (même les canaux les moins mesurés), puis le reliquat
 -- est réparti au prorata d'un score = part de dépense observée x bonus
--- de qualité d'evidence. Cette allocation recalcule donc différemment
--- si les données du mois prochain changent (spend_share, evidence_quality) ;
--- elle ne prétend pas mesurer un ROI causal par canal — c'est un budget
--- de test pondéré par ce qu'on peut honnêtement observer aujourd'hui.
+-- de qualité d'evidence. Ce calcul change si les données du mois prochain
+-- changent (spend_share, evidence_quality) ; il ne prétend pas mesurer un
+-- ROI causal par canal — c'est un budget de test pondéré par ce qu'on peut
+-- honnêtement observer aujourd'hui.
+--
+-- Budget décidé : si la var test_budget_allocation_fcfa est renseignée,
+-- ses montants deviennent le budget proposé (arbitrage humain) ; le calcul
+-- reste exposé dans computed_budget_fcfa pour garder l'écart visible.
 -- ======================================================================
+
+{% set decided = var('test_budget_allocation_fcfa', {}) %}
 
 WITH decision AS (
 
@@ -137,6 +143,30 @@ reconciled AS (
 
 ),
 
+-- ----------------------------------------------------------------------
+-- Budget décidé (var test_budget_allocation_fcfa). Un canal absent de la
+-- var garde le calcul : le total ne retombe alors plus sur 15 M FCFA et le
+-- test mart_budget_recommendation_15m_total le signale.
+-- ----------------------------------------------------------------------
+decided AS (
+
+    {% if decided %}
+    SELECT *
+    FROM (
+        VALUES
+        {% for channel, amount in decided.items() %}
+            ('{{ channel }}', CAST({{ amount }} AS DOUBLE)){% if not loop.last %},{% endif %}
+        {% endfor %}
+    ) AS t(channel, decided_budget_fcfa)
+    {% else %}
+    SELECT
+        CAST(NULL AS VARCHAR) AS channel,
+        CAST(NULL AS DOUBLE) AS decided_budget_fcfa
+    WHERE FALSE
+    {% endif %}
+
+),
+
 recommendation AS (
 
     SELECT
@@ -200,10 +230,20 @@ SELECT
     d.evidence_quality,
     d.measurement_profile,
 
-    r.proposed_budget_fcfa,
+    COALESCE(dec.decided_budget_fcfa, r.proposed_budget_fcfa) AS proposed_budget_fcfa,
 
-    r.proposed_budget_fcfa / (SELECT total_budget_fcfa FROM budget_params)
+    COALESCE(dec.decided_budget_fcfa, r.proposed_budget_fcfa)
+        / (SELECT total_budget_fcfa FROM budget_params)
         AS proposed_share,
+
+    -- Calcul de référence (socle + prorata), conservé même quand un budget
+    -- décidé le remplace.
+    r.proposed_budget_fcfa AS computed_budget_fcfa,
+
+    CASE
+        WHEN dec.decided_budget_fcfa IS NOT NULL THEN 'décidé'
+        ELSE 'calculé'
+    END AS allocation_source,
 
     rec.allocation_rationale,
     rec.test_condition
@@ -213,3 +253,5 @@ JOIN reconciled AS r
     ON d.channel = r.channel
 JOIN recommendation AS rec
     ON d.channel = rec.channel
+LEFT JOIN decided AS dec
+    ON d.channel = dec.channel
