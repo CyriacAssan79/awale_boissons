@@ -167,6 +167,14 @@ def extract_relative_months(question: str) -> int | None:
 
         return months
 
+    # « en ce moment », « récemment »… : trois mois par défaut.
+    if re.search(
+        r"\ben ce moment\b|\bces derniers temps\b|\bces temps-ci\b"
+        r"|\br[ée]cemment\b|\bactuellement\b",
+        text,
+    ):
+        return 3
+
     # « ces derniers mois » sans nombre : trois mois par défaut.
     if re.search(r"\b(?:ces|les|des)\s+derniers\s+mois\b", text):
         return 3

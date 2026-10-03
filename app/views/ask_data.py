@@ -6,6 +6,7 @@ import streamlit as st
 
 from ai.ask_data.filters import ALLOWED_CHANNELS
 from ai.ask_data.service import run_ask_data
+from common import get_language_model
 from theme import BISSAP, month_label, section, show_chart
 
 
@@ -23,6 +24,9 @@ HELP = (
     "<li><b>Hors périmètre</b> : les questions causales (« quel canal a causé… »), "
     "les prévisions et les métriques non définies (ROI, coût par litre…) "
     "sont refusées plutôt que d'inventer une réponse.</li>"
+    "<li><b>Questions libres</b> : si la question n'est pas reconnue, l'IA en propose "
+    "une interprétation (quoi mesurer, comment découper), affichée avec la réponse. "
+    "Les produits, canaux et dates sont toujours lus dans votre question.</li>"
     "<li><b>Toutes les réponses sont calculées à partir des données réelles</b>, "
     "selon des définitions de métriques validées.</li>"
     "</ul>"
@@ -180,10 +184,13 @@ DATA_UNAVAILABLE = {
 }
 
 
-def answer_question(question: str) -> dict:
+def answer_question(question: str, use_llm: bool) -> dict:
     """Exécute le pipeline Ask the Data et prépare les données pour l'affichage."""
+    # Le modèle n'est chargé que si les règles ne comprennent pas la question.
+    model_loader = get_language_model if use_llm else None
+
     try:
-        response = run_ask_data(question)
+        response = run_ask_data(question, model_loader=model_loader)
     except Exception:
         # Base absente ou verrouillée : le pipeline ne gère que les ValueError.
         return {"question": question, "error": DATA_UNAVAILABLE}
@@ -201,6 +208,8 @@ def answer_question(question: str) -> dict:
         "result": response.result,
         # Autres métriques citées (« les ventes et les dépenses »).
         "extras": [(part.intent, part.result) for part in response.extras],
+        # Interprétation affichée quand la question a été comprise par l'IA.
+        "interpretation": response.interpretation if response.used_llm else None,
     }
 
 
@@ -257,6 +266,12 @@ def show_entry(index: int, entry: dict) -> None:
                     args=(error["suggestion"],),
                 )
         else:
+            if entry.get("interpretation"):
+                st.caption(
+                    ":material/auto_awesome: Question interprétée par l'IA : "
+                    f"{entry['interpretation']}. Reformulez si ce n'est pas ce que vous cherchiez."
+                )
+
             st.markdown(entry["answer"].replace("\n", "  \n"))
             if entry["result"] is not None:
                 result_chart(entry["intent"], entry["result"], key=f"ask_chart_{index}")
@@ -280,7 +295,22 @@ history = st.session_state.setdefault(HISTORY_KEY, [])
 # EXEMPLES
 # ---------------------------------------------------------------------
 
-st.caption("Exemples de questions")
+caption_col, toggle_col = st.columns([3, 2], vertical_alignment="center")
+
+with caption_col:
+    st.caption("Exemples de questions")
+
+with toggle_col:
+    use_llm = st.toggle(
+        "Comprendre les questions libres (IA)",
+        value=True,
+        key="ask_data_use_llm",
+        help=(
+            "Si la question n'est pas reconnue, l'IA propose une interprétation, "
+            "vérifiée avant tout calcul et affichée avec la réponse. "
+            "La première utilisation charge le modèle (plus long)."
+        ),
+    )
 
 example_cols = st.columns(3)
 clicked = None
@@ -302,7 +332,8 @@ question = (
 )
 
 if question:
-    history.append(answer_question(question))
+    with st.spinner("Analyse de la question…"):
+        history.append(answer_question(question, use_llm))
 
 for index, entry in enumerate(history):
     show_entry(index, entry)

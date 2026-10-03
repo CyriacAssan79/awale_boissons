@@ -288,3 +288,23 @@ def test_mix_et_chiffre_d_affaires_ne_font_qu_une_metrique():
 
     assert intent.metric == "mix_produit"
     assert intent.other_metrics == []
+
+
+def test_ca_pronom_n_est_pas_le_chiffre_d_affaires():
+    intent = parse_question("Ça coûte combien la pub sur TikTok ?")
+
+    assert intent.metric == "spend_marketing"
+    assert intent.other_metrics == []
+
+
+@pytest.mark.parametrize("question", [
+    "Ça va les affaires en ce moment ?",
+    "Comment va l'activité récemment ?",
+    "Comment se porte le business ces derniers temps ?",
+])
+def test_activite_recente(question):
+    intent = parse_question(question)
+
+    assert intent.metric == "ca_net"
+    assert intent.dimensions == ["month"]
+    assert intent.relative_months == 3

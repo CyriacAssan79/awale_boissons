@@ -18,6 +18,19 @@ def get_connection():
     return duckdb.connect(DB_PATH, read_only=True)
 
 
+@st.cache_resource(show_spinner=False)
+def get_language_model():
+    """Charge Qwen une seule fois par processus Streamlit.
+
+    Partagé par le rapport IA et Ask the Data pour ne pas garder deux
+    copies du modèle en mémoire. Import différé : torch et transformers
+    ralentiraient l'affichage des pages qui n'en ont pas besoin.
+    """
+    from ai.reporting.generate_report import DEFAULT_MODEL, load_model
+
+    return load_model(DEFAULT_MODEL)
+
+
 @st.cache_data(ttl=300)
 def load_query(query: str) -> pd.DataFrame:
     with get_connection() as con:

@@ -23,7 +23,9 @@ def normalize(text: str) -> str:
     « Chiffre d’Affaire », « chiffre d'affaires » et « CHIFFRE D'AFFAIRES »
     deviennent comparables.
     """
-    text = unicodedata.normalize("NFKD", text.lower())
+    # « ça » est un pronom : sans la cédille, il deviendrait « ca » (chiffre d'affaires).
+    text = re.sub(r"\bça\b", "cela", text.lower())
+    text = unicodedata.normalize("NFKD", text)
     text = "".join(c for c in text if not unicodedata.combining(c))
     text = re.sub(r"[’`´]", "'", text)
     return re.sub(r"\s+", " ", text).strip()
@@ -44,6 +46,7 @@ METRIC_PATTERNS = {
         r"\bspend\b",
         r"\bbudgets?\b",
         r"\binvesti\w*",            # investi, investissement
+        r"\bcout\w*",               # coût, coûte, coûté (« combien coûte la pub »)
     ],
     "ca_net": [
         r"\bchiffres? d\s*'?\s*affaires?\b",
@@ -55,6 +58,9 @@ METRIC_PATTERNS = {
         r"\brapport(?:e|es|ent|ait|aient)\b",   # « combien rapporte… »
         r"\bfait combien\b",                    # « on a fait combien »
         r"\bcombien\b.*\bfait\b",               # « combien avons-nous fait »
+        r"\b(?:les|nos) affaires\b",            # « comment vont les affaires »
+        r"\bactivite\b",
+        r"\bbusiness\b",
     ],
 }
 
@@ -120,6 +126,11 @@ MONTH_TRIGGERS = [
     r"\btendance\w*",
     r"\bse port\w*",            # « comment se porte le CA »
     r"\bcomment va\b",
+    r"\bcela va\b",             # « ça va les affaires ? »
+    r"\ben ce moment\b",
+    r"\bces derniers temps\b",
+    r"\brecemment\b",
+    r"\bactuellement\b",
     r"\baugment\w*",
     r"\bdiminu\w*",
     r"\bbaiss\w*",
@@ -212,6 +223,60 @@ def _detect_dimensions(text: str) -> list[str]:
     return names
 
 
+def extract_period(question: str) -> dict:
+    """Période citée, sous forme de paramètres de build_intent.
+
+    Partagé avec l'interprétation par le modèle : les mois et années
+    viennent toujours du texte de la question, jamais du modèle.
+    """
+    since, since_month_of_year = extract_since(question)
+    relative_months = extract_relative_months(question)
+
+    month = month_of_year = None
+
+    # « depuis janvier » : le mois cité est un point de départ, pas un filtre.
+    if not (since or since_month_of_year):
+        month = extract_month(question)
+
+        # « en mai » sans année : résolu plus tard d'après les données.
+        month_of_year = None if month else extract_month_without_year(question)
+
+        # « le mois dernier » : dernier mois disponible, résolu de la même façon.
+        if not month and not month_of_year and not relative_months and mentions_latest_month(question):
+            month_of_year = LATEST_MONTH
+
+    periods = [
+        bool(month or month_of_year),
+        bool(since or since_month_of_year),
+        bool(relative_months),
+    ]
+
+    if sum(periods) > 1:
+        raise ValueError(
+            "Période ambiguë : la question contient à la fois "
+            "un mois précis et une période relative."
+        )
+
+    found = {
+        "month": month,
+        "month_of_year": month_of_year,
+        "since": since,
+        "since_month_of_year": since_month_of_year,
+        "relative_months": relative_months,
+    }
+    return {key: value for key, value in found.items() if value}
+
+
+def extract_mentions(question: str) -> tuple:
+    """Produits et canaux cités : valeur simple, liste (comparaison) ou None."""
+    text = normalize(question)
+
+    return (
+        _single_or_list(_find_all(PRODUCT_ALIASES, resolve_product, text)),
+        _single_or_list(_find_all(CHANNEL_ALIASES, resolve_channel, text)),
+    )
+
+
 def parse_question(question: str):
     """Transforme une question simple en QueryIntent."""
 
@@ -275,33 +340,7 @@ def parse_question(question: str):
     # 2. Résolution de la période
     # ---------------------------------------------------------
 
-    since, since_month_of_year = extract_since(question)
-    relative_months = extract_relative_months(question)
-
-    month = month_of_year = None
-
-    # « depuis janvier » : le mois cité est un point de départ, pas un filtre.
-    if not (since or since_month_of_year):
-        month = extract_month(question)
-
-        # « en mai » sans année : résolu plus tard d'après les données.
-        month_of_year = None if month else extract_month_without_year(question)
-
-        # « le mois dernier » : dernier mois disponible, résolu de la même façon.
-        if not month and not month_of_year and not relative_months and mentions_latest_month(question):
-            month_of_year = LATEST_MONTH
-
-    periods = [
-        bool(month or month_of_year),
-        bool(since or since_month_of_year),
-        bool(relative_months),
-    ]
-
-    if sum(periods) > 1:
-        raise ValueError(
-            "Période ambiguë : la question contient à la fois "
-            "un mois précis et une période relative."
-        )
+    period = extract_period(question)
 
     # ---------------------------------------------------------
     # 3. Résolution des dimensions
@@ -367,15 +406,11 @@ def parse_question(question: str):
         question=question,
         metric=metric,
         dimensions=dimensions,
-        month=month,
         channel=channel,
-        relative_months=relative_months,
         comparison=comparison,
         product=product,
-        month_of_year=month_of_year,
-        since=since,
-        since_month_of_year=since_month_of_year,
         other_metrics=other_metrics,
+        **period,
     )
 
 

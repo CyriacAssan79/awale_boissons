@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from common import DB_PATH, load_monthly
+from common import DB_PATH, get_language_model, load_monthly
 from theme import card, month_label, section
 
 
@@ -39,14 +39,6 @@ LAYOUT = [
     ["Produits", "Commandes WhatsApp"],
     ["Conclusion"],
 ]
-
-
-@st.cache_resource(show_spinner=False)
-def get_report_model():
-    """Charge le modèle de rédaction une seule fois par processus Streamlit."""
-    from ai.reporting.generate_report import DEFAULT_MODEL, load_model
-
-    return load_model(DEFAULT_MODEL)
 
 
 def saved_report_path(month: pd.Timestamp) -> Path:
@@ -204,7 +196,7 @@ if generate:
 
         if use_writer:
             st.write("Préparation de la rédaction (plus long la première fois)…")
-            writer = get_report_model()
+            writer = get_language_model()
             st.write("Rédaction de la synthèse et de la conclusion…")
 
         try:

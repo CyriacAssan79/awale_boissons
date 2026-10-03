@@ -475,6 +475,60 @@ def _join_and(items: list[str]) -> str:
 
 
 # ---------------------------------------------------------------------
+# DESCRIPTION DE L'INTERPRÉTATION
+# ---------------------------------------------------------------------
+
+DIMENSION_LABELS = {
+    "month": "par mois",
+    "channel": "par canal",
+    "product": "par produit",
+    "format": "par format",
+}
+
+
+def describe_intent(intent: QueryIntent) -> str:
+    """Interprétation retenue, en clair : « chiffre d'affaires net, par produit, en juin 2026 »."""
+    metrics = [intent.metric, *intent.other_metrics]
+    parts = [_join_and([metric_subject(m) for m in metrics])]
+
+    parts += [DIMENSION_LABELS.get(d, d) for d in intent.dimensions]
+
+    for key, label in (("product", "produit"), ("channel", "canal")):
+        value = intent.filters.get(key)
+
+        if isinstance(value, list):
+            parts.append(f"{label}s : {_join_and([str(v) for v in value])}")
+        elif value:
+            parts.append(f"{label} : {value}")
+
+    filters = intent.filters
+
+    if "month" in filters:
+        parts.append(f"en {_month_label(filters['month'] + '-01')}")
+    elif "month_of_year" in filters:
+        month = filters["month_of_year"]
+        parts.append(
+            "dernier mois disponible" if not month.isdigit()
+            else f"en {MONTH_NAMES[int(month) - 1]} (dernière année disponible)"
+        )
+    elif "since" in filters:
+        parts.append(f"depuis {_month_label(filters['since'] + '-01')}")
+    elif "since_month_of_year" in filters:
+        parts.append(f"depuis {MONTH_NAMES[int(filters['since_month_of_year']) - 1]}")
+    elif intent.relative_months:
+        parts.append(f"{intent.relative_months} derniers mois")
+    else:
+        parts.append("toute la période")
+
+    if intent.comparison == "max":
+        parts.append("le plus élevé")
+    elif intent.comparison == "min":
+        parts.append("le plus faible")
+
+    return _capitalize(", ".join(parts))
+
+
+# ---------------------------------------------------------------------
 # POINT D'ENTRÉE
 # ---------------------------------------------------------------------
 
