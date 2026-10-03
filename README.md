@@ -294,15 +294,17 @@ Le dashboard s'organise en 7 pages, regroupées par rubrique dans la barre laté
 
 | Rubrique | Page | Contenu |
 | --- | --- | --- |
-| Tableau de bord | Vue d'ensemble | Indicateurs globaux et avertissements de couverture |
-| Tableau de bord | Marketing | Dépenses par canal comparées au plan |
+| Tableau de bord | Vue d'ensemble | Indicateurs globaux, avertissements de couverture, cartes d'accès aux autres pages |
+| Tableau de bord | Marketing | Dépense de l'export, budget planifié et facturé ; dépenses par canal comparées au plan |
 | Tableau de bord | Ventes | CA net, couverture des données, mix produit |
 | Tableau de bord | Voix client | Sentiment, thèmes, produits mentionnés, commandes WhatsApp |
 | Décision | Recommandation | Répartition proposée des 15 M FCFA et cadre de test |
 | Intelligence artificielle | Rapport IA | Rapport mensuel : créer, mettre à jour, lire et télécharger |
-| Intelligence artificielle | Demander à l'IA | Questions en français sur les données (Ask the Data, voir 7 ter) |
+| Intelligence artificielle | Demander à l'IA | Questions en français sur les ventes, les dépenses et les commentaires clients (Ask the Data, voir 7 ter) |
 
 Le filtre de période (barre latérale, sous la navigation) s'applique aux pages Vue d'ensemble, Ventes et Voix client, et se conserve d'une page à l'autre.
+
+**Identité visuelle.** Le dashboard suit le design system « Ivorian Terroir & Analytic Rigor », issu de maquettes Google Stitch et adapté au desktop : fond écru, cartes à filet fin, bissap (`#7A123A`) en couleur principale, Epilogue pour les titres, Hanken Grotesk pour le texte, JetBrains Mono pour les chiffres. Couleurs et polices sont dans `.streamlit/config.toml` ; les composants (bandeau d'accueil, cartes de navigation, bandeaux de qualité des données, barres par canal, bulles de conversation) dans `app/theme.py`. Les maquettes contenaient des chiffres d'exemple inventés : le dashboard n'affiche que les données de la base.
 
 Le rapport mensuel peut aussi être produit en ligne de commande :
 
@@ -352,11 +354,11 @@ Les paramètres métier se modifient dans `dbt/dbt_project.yml`, section `vars` 
 ```
 awale_boissons/
 ├── .streamlit/
-│   └── config.toml   (thème du dashboard)
+│   └── config.toml   (thème du dashboard : couleurs et polices)
 ├── app/
 │   ├── app.py        (point d'entrée : navigation par rubrique dans la barre latérale)
 │   ├── common.py     (connexion DuckDB, formats, filtre de période, chargement du modèle Qwen partagé)
-│   ├── theme.py      (palette, CSS, graphiques)
+│   ├── theme.py      (identité visuelle : palette, CSS, composants, graphiques)
 │   └── views/        (une page par fichier : overview, marketing, sales,
 │                      customers, recommendation, report, ask_data)
 ├── ai/
