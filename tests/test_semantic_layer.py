@@ -149,3 +149,24 @@ def test_dimensions_exist_in_the_model(name, layer, con):
 
     unknown = [d for d in metric["dimensions"] if d not in columns]
     assert not unknown, f"{name} : dimensions absentes de {metric['modele']} : {unknown}"
+
+
+def composite_metric_names():
+    metrics = yaml.safe_load(LAYER_FILE.read_text(encoding="utf-8"))["metriques"]
+    return [name for name, metric in metrics.items() if metric.get("composantes")]
+
+
+@pytest.mark.parametrize("name", composite_metric_names())
+def test_components_add_up_to_the_expression(name, layer, con):
+    """Les composantes (positifs, neutres, négatifs…) s'exécutent et somment au total."""
+    metric = layer["metriques"][name]
+    components = metric["composantes"]
+
+    row = con.execute(
+        f"SELECT {metric['expression']}, "
+        + ", ".join(components.values())
+        + f" FROM {metric['modele']}"
+    ).fetchone()
+
+    total, parts = row[0], row[1:]
+    assert sum(parts) == total, f"{name} : composantes {sum(parts)} ≠ total {total}"

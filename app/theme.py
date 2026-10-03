@@ -894,9 +894,31 @@ h1, h2, h3 {{
     border-radius: 8px;
     border-color: {BORDER};
 }}
-.st-key-ask_examples [data-testid="stBaseButton-secondary"] {{
-    justify-content: space-between;
+[class*="st-key-ask_examples_"] {{
+    background: {SURFACE};
+    border: 1px solid {BORDER};
+    border-radius: 8px;
+    padding: 1rem 1.2rem 1.1rem;
+}}
+.st-key-ask_examples_voice {{
+    border-left: 4px solid {BISSAP};
+}}
+[class*="st-key-ask_examples_"] [data-testid="stBaseButton-secondary"] {{
+    justify-content: flex-start;
     min-height: 3rem;
+}}
+.examples-title {{
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-family: {FONT_HEAD};
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: {INK};
+    margin-bottom: .2rem;
+}}
+.examples-title .material-symbols-outlined {{
+    color: {BISSAP};
 }}
 
 /* ---- Barre latérale ---- */

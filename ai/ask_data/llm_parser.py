@@ -20,14 +20,20 @@ from typing import Callable
 
 from .dimensions import resolve_dimension
 from .intent import QueryIntent, build_intent
-from .question_parser import extract_mentions, extract_period, normalize
+from .question_parser import (
+    COMMENT_METRICS,
+    comment_platforms,
+    extract_mentions,
+    extract_period,
+    normalize,
+)
 from .resolver import resolve_metric
 
 
 # Métriques que le modèle peut proposer (celles prises en charge par les règles).
-SUPPORTED_METRICS = ("ca_net", "spend_marketing", "mix_produit")
+SUPPORTED_METRICS = ("ca_net", "spend_marketing", "mix_produit", "repartition_sentiment")
 
-ALLOWED_DIMENSIONS = ("month", "channel", "product", "format")
+ALLOWED_DIMENSIONS = ("month", "channel", "product", "format", "platform")
 
 # Période par défaut pour « récemment », « en ce moment »…
 RECENT_MONTHS = 3
@@ -50,14 +56,16 @@ Tu ne réponds jamais à la question : tu renvoies uniquement une fiche JSON sur
 Champs :
 - "metric" : "ca_net" (chiffre d'affaires, ventes, activité, ce que ça rapporte),
   "spend_marketing" (dépenses marketing, publicité, budget, coût des campagnes)
-  ou "mix_produit" (répartition des ventes entre les produits, produit préféré).
+  "mix_produit" (répartition des ventes entre les produits, produit préféré)
+  ou "repartition_sentiment" (avis, opinion, satisfaction, image auprès des clients).
 - "other_metrics" : autres métriques demandées dans la même question, souvent [].
 - "dimensions" : découpages parmi "month" (évolution dans le temps),
-  "channel" (canaux marketing), "product" (produits), "format" (formats).
+  "channel" (canaux marketing), "product" (produits), "format" (formats),
+  "platform" (réseaux sociaux où les clients commentent).
 - "ranking" : "max" si on cherche le meilleur ou le plus grand, "min" le plus petit, sinon null.
 - "recent" : true si la question parle de la période récente sans date précise.
 - "out_of_scope" : true si la question ne porte ni sur les ventes, ni sur les
-  dépenses marketing, ni sur les produits vendus.
+  dépenses marketing, ni sur les produits vendus, ni sur l'avis des clients.
 """
 
 # Exemples de questions que les règles ne reconnaissent pas.
@@ -80,6 +88,11 @@ EXAMPLES = [
     (
         "Où part l'argent de la com ?",
         {"metric": "spend_marketing", "other_metrics": [], "dimensions": ["channel"],
+         "ranking": None, "recent": False, "out_of_scope": False},
+    ),
+    (
+        "Les gens aiment-ils ce qu'on fait ?",
+        {"metric": "repartition_sentiment", "other_metrics": [], "dimensions": [],
          "ranking": None, "recent": False, "out_of_scope": False},
     ),
     (
@@ -200,6 +213,15 @@ def intent_from_llm_output(raw: str, question: str) -> QueryIntent:
     # Faits : uniquement ce qui est écrit dans la question.
     product, channel = extract_mentions(question)
     period = extract_period(question)
+    platform = None
+
+    # Commentaires : Facebook, Instagram, TikTok sont des plateformes.
+    if metric in COMMENT_METRICS:
+        platform = comment_platforms(normalize(question))
+        channel = None
+
+    if isinstance(platform, list) and "platform" not in dimensions:
+        dimensions.insert(0, "platform")
 
     if not period and data.get("recent") is True:
         period = {"relative_months": RECENT_MONTHS}
@@ -226,6 +248,7 @@ def intent_from_llm_output(raw: str, question: str) -> QueryIntent:
         dimensions=dimensions,
         channel=channel,
         product=product,
+        platform=platform,
         comparison=ranking if dimensions else None,
         other_metrics=other_metrics,
         **period,

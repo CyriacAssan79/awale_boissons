@@ -108,7 +108,7 @@ Avril, mai et juin passent les contrôles. Janvier bascule sur la synthèse de s
 
 ## 7 ter. IA — Ask the Data
 
-La page **Demander à l'IA** du dashboard répond en français à une question sur les ventes, les dépenses marketing ou le mix produit (« Le bissap a rapporté combien en mai ? », « Sur quoi avons-nous le plus dépensé ? », « Compare Meta et TikTok en juin 2026 »).
+La page **Demander à l'IA** du dashboard répond en français à une question sur les ventes, les dépenses marketing, le mix produit ou les commentaires clients (« Le bissap a rapporté combien en mai ? », « Sur quoi avons-nous le plus dépensé ? », « Compare Meta et TikTok en juin 2026 », « Quelle plateforme génère le plus de retours négatifs ? »).
 
 ```
 question → règles (question_parser) ──────────────┐
@@ -116,7 +116,7 @@ question → règles (question_parser) ─────────────�
                                                                                  → intention → SQL (semantic_layer.yml) → DuckDB → phrase rédigée en Python
 ```
 
-- **Les règles comprennent la grande majorité des questions**, instantanément : métriques (CA net, dépenses marketing, mix produit), découpages (mois, canal, produit, format), filtres (mois avec ou sans année, « depuis mars », « ces 3 derniers mois », « le mois dernier », canaux, produits), comparaisons (« le bissap et le gingembre ») et classements (« le canal qui dépense le plus »).
+- **Les règles comprennent la grande majorité des questions**, instantanément : métriques (CA net, dépenses marketing, mix produit, et pour la voix du client : répartition du sentiment, commentaires positifs, négatifs et neutres, parts de positifs et de négatifs, volume, commentaires exploitables, spam, thèmes), découpages (mois, canal, produit, format, plateforme), filtres (mois avec ou sans année, « depuis mars », « ces 3 derniers mois », « le mois dernier », « ce mois-ci », canaux, produits, plateformes Facebook / Instagram / TikTok), comparaisons (« le bissap et le gingembre ») et classements (« le canal qui dépense le plus »).
 - **Le SQL est construit uniquement à partir de `docs/semantic_layer.yml`** : modèle, expression et découpages autorisés de chaque métrique. Mois, canaux et produits sont vérifiés sur des listes fermées avant d'entrer dans la requête (tests d'injection dans `tests/ask_data/`).
 - **La réponse est rédigée par des phrases modèles en Python** (`ai/ask_data/narrative.py`), pas par le modèle : total, premier et dernier, part du total, tendance sur la période, comparaison au mois précédent. Elle décrit ce qui s'est passé, jamais pourquoi.
 - **Refus volontaires** : questions causales (« quel canal a causé… »), prévisions, métriques non définies (ROI, coût par litre…) et découpages indisponibles (dépenses par produit) reçoivent un message clair avec une question à essayer. Ces refus ne sont jamais confiés au modèle.
@@ -125,7 +125,9 @@ question → règles (question_parser) ─────────────�
 
 **Durées mesurées (CPU, 02/10/2026, 8 questions libres)** : questions comprises par les règles, instantanées ; questions confiées à Qwen, **25 à 38 s** chacune ; premier appel de la session, ~50 s de plus pour charger le modèle (partagé avec le rapport mensuel, chargé une seule fois).
 
-Code : `ai/ask_data/` (point d'entrée `service.run_ask_data`). Tests : `tests/ask_data/` (162 tests, modèle simulé, sans téléchargement).
+Code : `ai/ask_data/` (point d'entrée `service.run_ask_data`). Tests : `tests/ask_data/` (247 tests, modèle simulé, sans téléchargement).
+
+**Voix du client** (ajout du 03/10/2026) : les questions sur les commentaires utilisent `mart_social_monthly` via les métriques de `docs/semantic_layer.yml` (section « Voix du client »). La répartition du sentiment et les thèmes sont déclarés avec des `composantes` (positifs, neutres, négatifs ; goût, prix…) calculées dans la même requête. Pour une question sur les commentaires, Facebook, Instagram et TikTok sont des plateformes (« Meta » = Facebook + Instagram) ; Google, la radio ou les influenceurs sont refusés, faute de commentaires. Une question de synthèse (« résume-moi… », « qu'est-ce qui ressort… ») ajoute les thèmes au sentiment ; « les avis négatifs augmentent-ils ? » donne le nombre et la part, car le nombre dépend du volume du mois. Les réponses sur le sentiment rappellent que le classement est automatique.
 
 ## 8. Customer Voice — janvier à juin 2026
 
@@ -235,7 +237,7 @@ variable n'est pas modifiée : le comparer au calcul à chaque cycle. Le budget 
 - Les 96 lignes POS identiques (toutes sur l'entrepôt `POS999`) sont conservées : si l'export contenait de vrais doublons, le CA net serait surévalué de 0,50 % (440 600 FCFA). À confirmer auprès du distributeur.
 - Deux cas de points de vente ne sont pas fusionnés sans validation (`Avenue 16` / `Avenue 16 (nouveau)`, probablement un même magasin : 40 magasins au lieu de 41).
 - Le "CA net observé" du dashboard est le CA des points de vente uniquement ; les commandes WhatsApp n'y sont pas incluses.
-- Ask the Data ne connaît que trois métriques (CA net, dépenses marketing, mix produit). « Le produit le plus vendu » est classé par chiffre d'affaires, pas par unités (`unites_vendues` n'est pas encore prise en charge). Le CA par canal n'existe pas dans la couche sémantique (`ca_net` ne se découpe que par mois). Un mois sans année (« en mai ») désigne le plus récent présent dans les données, « le mois dernier » le dernier mois disponible ; la réponse annonce toujours le mois utilisé. Les comparaisons au mois précédent ne signalent pas encore un mois incomplet (avril).
+- Ask the Data couvre le CA net, les dépenses marketing, le mix produit et les commentaires clients ; le sentiment n'est pas disponible par produit (le mart ne croise pas sentiment et produit). « Le produit le plus vendu » est classé par chiffre d'affaires, pas par unités (`unites_vendues` n'est pas encore prise en charge). Le CA par canal n'existe pas dans la couche sémantique (`ca_net` ne se découpe que par mois). Un mois sans année (« en mai ») désigne le plus récent présent dans les données, « le mois dernier » le dernier mois disponible ; la réponse annonce toujours le mois utilisé. Les comparaisons au mois précédent ne signalent pas encore un mois incomplet (avril).
 - Avec les versions de `requirements.txt` sur CPU, le vrai modèle a reproduit à l'identique les prédictions déjà enregistrées sur deux échantillons (12 et 24 commentaires), pas sur les 2 831 : un autre matériel ou d'autres versions peuvent produire des sorties légèrement différentes pour un même commentaire.
 
 ## 14. Reproductibilité
@@ -308,7 +310,7 @@ Le rapport mensuel peut aussi être produit en ligne de commande :
 python -m ai.reporting.generate_report --year 2026 --month 6 --save   # → outputs/reports/rapport_2026_06.md
 ```
 
-**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning (avant l'ajout, le 03/10/2026, du budget décidé et du test `mart_budget_recommendation_15m_decided_channels`, à rejouer avec `dbt run` puis `dbt test`) ; `pytest` : 228/228 tests, dont 162 pour Ask the Data (03/10/2026, voir 14.5).
+**Validation actuelle :** 26/26 modèles dbt et 96/96 tests dbt, avec 0 erreur et 0 warning (avant l'ajout, le 03/10/2026, du budget décidé et du test `mart_budget_recommendation_15m_decided_channels`, à rejouer avec `dbt run` puis `dbt test`) ; `pytest` : 335/335 tests, dont 247 pour Ask the Data (03/10/2026, voir 14.5).
 
 Le chargement (`ingestion/load_raw.py`) valide les cinq feuilles et leurs colonnes **avant** d'écrire : une feuille absente, vide ou incomplète interrompt le run avec un message clair, sans modifier la base.
 

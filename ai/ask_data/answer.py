@@ -36,10 +36,29 @@ RATIO_METRICS = {
     "evolution_ca",
     "part_budget_canal",
     "sentiment_client",
+    "taux_positifs",
+    "taux_spam",
     "taux_reachat_livraison",
     "taux_retours",
     "whatsapp_montants_exploitables",
 }
+
+
+# Nombres de commentaires (voix du client), affichés en entiers.
+COUNT_METRICS = {
+    "repartition_sentiment",
+    "themes_commentaires",
+    "commentaires_positifs",
+    "commentaires_negatifs",
+    "commentaires_neutres",
+    "commentaires_total",
+    "commentaires_exploitables",
+    "commentaires_spam",
+}
+
+
+def format_count(value: float) -> str:
+    return f"{int(round(float(value))):,}".replace(",", " ")
 
 
 def format_value(metric: str, value) -> str:
@@ -52,6 +71,9 @@ def format_value(metric: str, value) -> str:
 
     if metric in RATIO_METRICS:
         return _format_ratio(float(value))
+
+    if metric in COUNT_METRICS:
+        return format_count(value)
 
     return str(value)
 

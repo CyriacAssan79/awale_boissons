@@ -44,11 +44,12 @@ LATEST_MONTH = "dernier"
 
 
 def mentions_latest_month(question: str) -> bool:
-    """« le mois dernier », « le dernier mois », « le mois le plus récent »."""
+    """« le mois dernier », « le dernier mois », « ce mois-ci », « le mois le plus récent »."""
     text = question.lower()
 
     return re.search(
-        r"\bmois dernier\b|\bdernier mois\b|\bmois le plus r[ée]cent\b",
+        r"\bmois dernier\b|\bdernier mois\b|\bmois le plus r[ée]cent\b"
+        r"|\bce mois(?:-ci| ci)?\b",
         text,
     ) is not None
 

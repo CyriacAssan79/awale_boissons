@@ -22,6 +22,8 @@
 #   unite         FCFA, unités, litres, ratio (0 à 1) ou nombre
 #   attendu       (optionnel) bornes que la valeur doit respecter, contrôle de cohérence
 #   par_ligne     true si l'expression est une fenêtre : elle renvoie une valeur par ligne
+#   composantes   (optionnel) mesures complémentaires calculées dans la même requête
+#                 (ex. positifs, neutres, négatifs) ; l'expression reste le total de référence
 #   precautions   ce qu'il faut savoir avant d'interpréter le chiffre
 
 version: 1
@@ -239,6 +241,114 @@ metriques:
     attendu: {entre: [0, 1]}
     precautions:
       - Tant que cette part est nettement inférieure à 1, aucun revenu livraison ne doit être affiché ni extrapolé.
+
+  # ------------------------------------------------ Voix du client (Ask the Data)
+  # Commentaires des réseaux sociaux, par mois et par plateforme (Facebook,
+  # Instagram, TikTok). Le sentiment et les thèmes excluent le spam ; le taux de
+  # commentaires négatifs est sentiment_client (section KPI ci-dessus).
+  repartition_sentiment:
+    libelle: Répartition du sentiment
+    definition: Commentaires exploitables (hors spam) répartis en positifs, neutres et négatifs.
+    modele: mart_social_monthly
+    expression: SUM(non_spam_comments_count)
+    composantes:
+      positifs: SUM(positive_comments_count)
+      neutres: SUM(neutral_comments_count)
+      negatifs: SUM(negative_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+    precautions:
+      - Positifs + neutres + négatifs = commentaires exploitables (hors spam).
+      - Classification automatique (V4, accord sentiment 95 % sur 108 commentaires annotés) : lire la direction, pas la valeur exacte.
+
+  commentaires_positifs:
+    libelle: Commentaires positifs
+    definition: Nombre de commentaires exploitables classés positifs.
+    modele: mart_social_monthly
+    expression: SUM(positive_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+
+  commentaires_negatifs:
+    libelle: Commentaires négatifs
+    definition: Nombre de commentaires exploitables classés négatifs.
+    modele: mart_social_monthly
+    expression: SUM(negative_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+    precautions:
+      - Un nombre dépend du volume de commentaires du mois ; pour comparer des mois, préférer la part (sentiment_client).
+
+  commentaires_neutres:
+    libelle: Commentaires neutres
+    definition: Nombre de commentaires exploitables classés neutres.
+    modele: mart_social_monthly
+    expression: SUM(neutral_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+
+  taux_positifs:
+    libelle: Part de commentaires positifs
+    definition: Commentaires positifs rapportés aux commentaires exploitables (hors spam).
+    modele: mart_social_monthly
+    expression: SUM(positive_comments_count) * 1.0 / NULLIF(SUM(non_spam_comments_count), 0)
+    dimensions: [month, platform]
+    unite: ratio
+    attendu: {entre: [0, 1]}
+
+  commentaires_total:
+    libelle: Volume de commentaires
+    definition: Nombre total de commentaires reçus, spam compris.
+    modele: mart_social_monthly
+    expression: SUM(comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+
+  commentaires_exploitables:
+    libelle: Commentaires exploitables
+    definition: Commentaires non détectés comme spam, seuls pris en compte pour le sentiment et les thèmes.
+    modele: mart_social_monthly
+    expression: SUM(non_spam_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+
+  commentaires_spam:
+    libelle: Commentaires indésirables (spam)
+    definition: Commentaires détectés comme spam, exclus du sentiment et des thèmes.
+    modele: mart_social_monthly
+    expression: SUM(spam_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+
+  taux_spam:
+    libelle: Taux de spam
+    definition: Commentaires détectés comme spam rapportés à l'ensemble des commentaires.
+    modele: mart_social_monthly
+    expression: SUM(spam_comments_count) * 1.0 / NULLIF(SUM(comments_count), 0)
+    dimensions: [month, platform]
+    unite: ratio
+    attendu: {entre: [0, 1]}
+
+  themes_commentaires:
+    libelle: Thèmes des commentaires
+    definition: Commentaires exploitables (hors spam) répartis par thème principal.
+    modele: mart_social_monthly
+    expression: SUM(non_spam_comments_count)
+    composantes:
+      gout: SUM(taste_comments_count)
+      prix: SUM(price_comments_count)
+      promotion: SUM(promotion_comments_count)
+      disponibilite: SUM(availability_comments_count)
+      emballage: SUM(packaging_comments_count)
+      sante: SUM(health_comments_count)
+      livraison: SUM(delivery_comments_count)
+      service: SUM(service_comments_count)
+      question_produit: SUM(product_question_comments_count)
+      autre: SUM(other_theme_comments_count)
+    dimensions: [month, platform]
+    unite: nombre
+    precautions:
+      - Un seul thème par commentaire ; la somme des thèmes vaut le nombre de commentaires exploitables.
 
   budget_test_propose:
     libelle: Budget de test proposé

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .semantic_layer import get_metric
 from .intent import QueryIntent
-from .filters import resolve_channel, resolve_product
+from .filters import resolve_channel, resolve_platform, resolve_product
 from .periods import validate_month
 
 
@@ -42,14 +42,12 @@ def build_sql(intent: QueryIntent) -> str:
                 f"pour '{intent.metric}'."
             )
 
-    if intent.dimensions:
-        select_parts = intent.dimensions + [
-            f"{expression} AS {intent.metric}"
-        ]
-    else:
-        select_parts = [
-            f"{expression} AS {intent.metric}"
-        ]
+    select_parts = intent.dimensions + [f"{expression} AS {intent.metric}"]
+
+    # Composantes (positifs, neutres, négatifs…) : calculées dans la même
+    # requête, à côté du total de référence.
+    for name, component in metric.get("composantes", {}).items():
+        select_parts.append(f"{component} AS {name}")
 
     sql = f"""
 SELECT
@@ -122,6 +120,18 @@ FROM {model}
 
         conditions.append(
             _value_condition("product", intent.filters["product"], resolve_product)
+        )
+
+    if "platform" in intent.filters:
+        if "platform" not in allowed_dimensions:
+            raise ValueError(
+                f"La dimension 'platform' n'est pas disponible "
+                f"pour la métrique '{intent.metric}'. "
+                f"Dimensions disponibles : {allowed_dimensions}"
+            )
+
+        conditions.append(
+            _value_condition("platform", intent.filters["platform"], resolve_platform)
         )
 
     if conditions:

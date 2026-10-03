@@ -12,6 +12,7 @@ from .llm_parser import llm_parse
 from .narrative import describe_intent, metric_subject, narrate
 from .periods import LATEST_MONTH, previous_month
 from .question_parser import parse_question
+from .semantic_layer import get_metric
 from .sql_builder import build_sql
 
 
@@ -40,8 +41,11 @@ class AskDataResult:
     interpretation: str | None = None
 
 
-def fetch_previous_value(intent: QueryIntent) -> float | None:
-    """Valeur du mois précédent, pour une question sur un seul mois sans découpage."""
+def fetch_previous_value(intent: QueryIntent) -> float | dict | None:
+    """Valeur du mois précédent, pour une question sur un seul mois sans découpage.
+
+    Pour une répartition (composantes), renvoie {total et composantes}.
+    """
     month = intent.filters.get("month")
 
     if not month or intent.dimensions:
@@ -55,6 +59,12 @@ def fetch_previous_value(intent: QueryIntent) -> float | None:
 
     if result.empty or pd.isna(result.iloc[0][intent.metric]):
         return None
+
+    components = (get_metric(intent.metric) or {}).get("composantes")
+
+    if components:
+        row = result.iloc[0]
+        return {name: float(row[name]) for name in [intent.metric, *components]}
 
     return float(result.iloc[0][intent.metric])
 

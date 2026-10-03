@@ -4,10 +4,13 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from ai.ask_data.filters import ALLOWED_CHANNELS
+from ai.ask_data.answer import RATIO_METRICS
+from ai.ask_data.filters import ALLOWED_CHANNELS, ALLOWED_PLATFORMS
+from ai.ask_data.narrative import SENTIMENT_LABELS, THEME_LABELS
+from ai.ask_data.semantic_layer import get_metric
 from ai.ask_data.service import run_ask_data
 from common import get_language_model
-from theme import BISSAP, month_label, section, show_chart
+from theme import BISSAP, GINGEMBRE_DARK, SENTIMENT_COLORS, icon, month_label, section, show_chart
 
 
 HISTORY_KEY = "ask_data_history"
@@ -16,11 +19,15 @@ PENDING_KEY = "ask_data_pending"
 # Infobulle du titre : une seule ligne HTML, une ligne vide casserait le rendu.
 HELP = (
     "<ul>"
-    "<li><b>Métriques</b> : chiffre d'affaires net, dépenses marketing, mix produit.</li>"
-    "<li><b>Découpages</b> : par mois, par canal, par produit, par format (selon la métrique).</li>"
-    "<li><b>Filtres</b> : un mois (« en juin 2026 », ou « en mai » pour le plus récent), "
+    "<li><b>Métriques</b> : chiffre d'affaires net, dépenses marketing, mix produit ; "
+    "voix du client : sentiment, commentaires positifs, négatifs et neutres, "
+    "spam, volume de commentaires, thèmes abordés.</li>"
+    "<li><b>Découpages</b> : par mois, par canal, par produit, par format, "
+    "par plateforme pour les commentaires (selon la métrique).</li>"
+    "<li><b>Filtres</b> : un mois (« en juin 2026 », « en mai » ou « ce mois-ci » pour le plus récent), "
     "une période relative (« ces 3 derniers mois », « le dernier trimestre »), "
-    "un canal (Meta, TikTok, Google, Radio…), un produit (bissap, bouye, gingembre).</li>"
+    "un canal (Meta, TikTok, Google, Radio…), un produit (bissap, bouye, gingembre), "
+    "une plateforme de commentaires (Facebook, Instagram, TikTok).</li>"
     "<li><b>Hors périmètre</b> : les questions causales (« quel canal a causé… »), "
     "les prévisions et les métriques non définies (ROI, coût par litre…) "
     "sont refusées plutôt que d'inventer une réponse.</li>"
@@ -32,12 +39,28 @@ HELP = (
     "</ul>"
 )
 
-EXAMPLES = [
-    "Quel est le CA net en juin 2026 ?",
-    "Quel est le CA net par mois ?",
-    "Combien avons-nous dépensé sur Meta en juin 2026 ?",
-    "Quel est le spend par canal ?",
-    "Donne moi les dépenses publicitaires par canal ces 3 derniers mois",
+# (clé, titre, icône, questions) : un bloc d'exemples par domaine.
+EXAMPLE_GROUPS = [
+    (
+        "sales",
+        "Ventes et marketing",
+        "payments",
+        [
+            "Quel est le CA net en juin 2026 ?",
+            "Quel est le CA net par mois ?",
+            "Combien avons-nous dépensé sur Meta en juin 2026 ?"
+        ],
+    ),
+    (
+        "voice",
+        "Voix du client",
+        "forum",
+        [
+            "Quel est le sentiment des clients ?",
+            "Comment évolue le sentiment des clients par mois ?",
+            "Quel est le taux de commentaires négatifs ?",
+        ],
+    ),
 ]
 
 
@@ -51,6 +74,17 @@ METRIC_LABELS = {
     "ca_net": "le chiffre d'affaires",
     "spend_marketing": "les dépenses marketing",
     "mix_produit": "le mix produit",
+    "repartition_sentiment": "le sentiment des clients",
+    "themes_commentaires": "les thèmes des commentaires",
+    "commentaires_positifs": "les commentaires positifs",
+    "commentaires_negatifs": "les commentaires négatifs",
+    "commentaires_neutres": "les commentaires neutres",
+    "commentaires_total": "le volume de commentaires",
+    "commentaires_exploitables": "les commentaires exploitables",
+    "commentaires_spam": "les commentaires indésirables",
+    "sentiment_client": "la part de commentaires négatifs",
+    "taux_positifs": "la part de commentaires positifs",
+    "taux_spam": "le taux de spam",
 }
 
 DIMENSION_LABELS = {
@@ -75,8 +109,8 @@ UNSUPPORTED_LABELS = {
 }
 
 AVAILABLE_METRICS = (
-    "Je peux vous renseigner sur le chiffre d'affaires, "
-    "les dépenses marketing et le mix produit."
+    "Je peux vous renseigner sur le chiffre d'affaires, les dépenses marketing, "
+    "le mix produit et les commentaires clients (sentiment, spam, thèmes)."
 )
 
 
@@ -161,6 +195,14 @@ def friendly_error(error: str) -> dict:
             "suggestion": "Quel est le CA net en juin 2026 ?",
         }
 
+    if error.startswith("Plateforme inconnue"):
+        return {
+            "title": "Les commentaires ne sont suivis que sur trois plateformes.",
+            "body": "Les commentaires clients proviennent de "
+            f"{', '.join(ALLOWED_PLATFORMS)}.",
+            "suggestion": "Donne-moi le sentiment par plateforme.",
+        }
+
     if error.startswith("Canal inconnu"):
         return {
             "title": "Je ne connais pas ce canal.",
@@ -217,8 +259,62 @@ def ask_suggestion(suggestion: str) -> None:
     st.session_state[PENDING_KEY] = suggestion
 
 
+def composite_chart(intent, result: pd.DataFrame, components: list[str], key: str) -> None:
+    """Répartitions : sentiment empilé (positif, neutre, négatif) ou thèmes classés."""
+    data = result.copy()
+
+    if intent.metric == "themes_commentaires":
+        totals = data[components].sum().rename(index=THEME_LABELS).sort_values()
+        fig = px.bar(
+            x=totals.values,
+            y=totals.index,
+            orientation="h",
+            color_discrete_sequence=[GINGEMBRE_DARK],
+        )
+        fig.update_layout(xaxis_title=None, yaxis_title=None)
+        show_chart(fig, height=340, key=key)
+        return
+
+    dimensions = [d for d in intent.dimensions if d in data.columns]
+
+    if "month" in data.columns:
+        data["month"] = pd.to_datetime(data["month"])
+        data = data.sort_values("month")
+        data["mois"] = data["month"].map(month_label)
+
+    x = "mois" if "month" in dimensions else (dimensions[0] if dimensions else None)
+    facet = "platform" if "month" in dimensions and "platform" in dimensions else None
+    keys = [k for k in (x, facet) if k]
+
+    long = (
+        data.groupby(keys, as_index=False, sort=False)[components].sum()
+        if keys
+        else data[components].sum().to_frame().T
+    ).melt(id_vars=keys, value_vars=components, var_name="sentiment", value_name="commentaires")
+    long["sentiment"] = long["sentiment"].map(SENTIMENT_LABELS)
+
+    fig = px.bar(
+        long,
+        x=x or "sentiment",
+        y="commentaires",
+        color="sentiment",
+        facet_col=facet,
+        color_discrete_map=SENTIMENT_COLORS,
+        category_orders={"sentiment": list(SENTIMENT_LABELS.values())},
+    )
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+    fig.update_layout(xaxis_title=None, yaxis_title=None, legend_title_text="")
+    show_chart(fig, height=340, key=key)
+
+
 def result_chart(intent, result: pd.DataFrame, key: str) -> None:
     """Graphique simple lorsque la réponse est découpée par une ou deux dimensions."""
+    components = list((get_metric(intent.metric) or {}).get("composantes", {}))
+
+    if components:
+        composite_chart(intent, result, components, key)
+        return
+
     dimensions = [d for d in intent.dimensions if d in result.columns]
 
     if not dimensions or len(result) < 2:
@@ -243,6 +339,10 @@ def result_chart(intent, result: pd.DataFrame, key: str) -> None:
         color_discrete_sequence=None if color else [BISSAP],
     )
     fig.update_layout(xaxis_title=None, yaxis_title=None)
+
+    if intent.metric in RATIO_METRICS:
+        fig.update_yaxes(tickformat=".0%")
+
     # Clé obligatoire : deux réponses identiques donneraient le même graphique.
     show_chart(fig, height=320, key=key)
 
@@ -283,8 +383,8 @@ def show_entry(index: int, entry: dict) -> None:
 section(
     6,
     "Ask the Data",
-    "Posez une question sur les ventes ou les dépenses marketing : "
-    "la réponse est calculée directement à partir des données.",
+    "Posez une question sur les ventes, les dépenses marketing ou les commentaires "
+    "clients : la réponse est calculée directement à partir des données.",
     help=HELP,
 )
 
@@ -314,18 +414,23 @@ with toggle_col:
 
 clicked = None
 
-with st.container(key="ask_examples"):
-    example_cols = st.columns(3)
+for group_key, group_title, group_icon, examples in EXAMPLE_GROUPS:
+    with st.container(key=f"ask_examples_{group_key}"):
+        st.markdown(
+            f'<div class="examples-title">{icon(group_icon)}{group_title}</div>',
+            unsafe_allow_html=True,
+        )
+        example_cols = st.columns(3)
 
-    for i, example in enumerate(EXAMPLES):
-        with example_cols[i % 3]:
-            if st.button(
-                example,
-                key=f"ask_example_{i}",
-                icon=":material/north_east:",
-                width="stretch",
-            ):
-                clicked = example
+        for i, example in enumerate(examples):
+            with example_cols[i % 3]:
+                if st.button(
+                    example,
+                    key=f"ask_example_{group_key}_{i}",
+                    icon=":material/north_east:",
+                    width="stretch",
+                ):
+                    clicked = example
 
 
 # ---------------------------------------------------------------------

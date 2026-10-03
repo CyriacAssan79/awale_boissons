@@ -61,6 +61,37 @@ def resolve_product(term: str) -> str:
     return PRODUCT_ALIASES[normalized]
 
 
+# Plateformes des commentaires clients (mart_social_monthly). « Meta »
+# désigne Facebook et Instagram ensemble : il est traité par le parseur.
+PLATFORM_ALIASES = {
+    "facebook": "Facebook",
+    "fb": "Facebook",
+    "instagram": "Instagram",
+    "insta": "Instagram",
+    "tiktok": "TikTok",
+    "tik tok": "TikTok",
+}
+
+
+ALLOWED_PLATFORMS = tuple(
+    sorted(set(PLATFORM_ALIASES.values()))
+)
+
+
+def resolve_platform(term: str) -> str:
+    """Résout un alias vers une plateforme de commentaires autorisée."""
+
+    normalized = term.strip().lower()
+
+    if normalized not in PLATFORM_ALIASES:
+        raise ValueError(
+            f"Plateforme inconnue : '{term}'. "
+            f"Plateformes disponibles : {', '.join(ALLOWED_PLATFORMS)}"
+        )
+
+    return PLATFORM_ALIASES[normalized]
+
+
 def is_valid_channel(channel: str) -> bool:
     """Vérifie qu'un canal est autorisé."""
 

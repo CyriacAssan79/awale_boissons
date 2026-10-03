@@ -27,6 +27,7 @@ def build_intent(
     relative_months: int | None = None,
     comparison: str | None = None,
     product: str | list[str] | None = None,
+    platform: str | list[str] | None = None,
     month_of_year: str | None = None,
     since: str | None = None,
     since_month_of_year: str | None = None,
@@ -53,6 +54,9 @@ def build_intent(
 
     if product:
         filters["product"] = product
+
+    if platform:
+        filters["platform"] = platform
 
     # Mois cité sans année (« en mai ») : l'année est fixée par le service,
     # d'après les données disponibles, avant la construction du SQL.
