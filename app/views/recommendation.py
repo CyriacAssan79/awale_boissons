@@ -3,7 +3,7 @@ import plotly.express as px
 import streamlit as st
 
 from common import integer, load_query, money
-from theme import BISSAP, card, card_title, section, show_chart
+from theme import CHANNEL_COLORS, banner, card, card_title, section, show_chart
 
 
 allocation = load_query(
@@ -29,9 +29,11 @@ section(
     "Proposition de répartition pour tester 15 M FCFA — signaux descriptifs, pas un ROI causal.",
 )
 
-st.info(
+banner(
+    "info",
+    "Signaux descriptifs, pas de ROI causal",
     "Cette section présente des signaux descriptifs et des hypothèses "
-    "de pilotage. Elle ne calcule pas de ROI causal par canal."
+    "de pilotage. Elle ne calcule pas de ROI causal par canal.",
 )
 
 recommendation_view = recommendation[
@@ -80,7 +82,8 @@ with col2:
             title="Répartition proposée des 15 M FCFA",
             labels={"channel": "", "proposed_budget_fcfa": "Budget proposé (FCFA)"},
             text="proposed_budget_fcfa",
-            color_discrete_sequence=[BISSAP],
+            color="channel",
+            color_discrete_map=CHANNEL_COLORS,
         )
 
         fig_recommendation.update_traces(
@@ -204,9 +207,15 @@ with card("test_plan"):
     st.dataframe(test_plan, hide_index=True, width="stretch")
 
 if total_recommended != 15_000_000:
-    st.error(
-        f"Contrôle budget : la proposition totalise {money(total_recommended)} "
-        "au lieu de 15 000 000 FCFA."
+    banner(
+        "error",
+        "Contrôle budget",
+        f"La proposition totalise {money(total_recommended)} au lieu de 15 000 000 FCFA.",
     )
 else:
-    st.success("Contrôle budget : la proposition totalise exactement 15 000 000 FCFA.")
+    banner(
+        "success",
+        "Contrôle budget",
+        "La proposition totalise exactement 15 000 000 FCFA.",
+        tag="15 000 000 FCFA",
+    )

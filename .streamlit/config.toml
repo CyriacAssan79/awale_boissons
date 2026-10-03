@@ -1,16 +1,22 @@
 [theme]
 base = "light"
-primaryColor = "#9C1F3F"
-backgroundColor = "#FBF6EF"
-secondaryBackgroundColor = "#F3E9DB"
-textColor = "#2B1D18"
-borderColor = "#EADFD0"
-baseRadius = "large"
-font = "sans-serif"
+primaryColor = "#7A123A"
+backgroundColor = "#FDFBF7"
+secondaryBackgroundColor = "#F8F6F0"
+textColor = "#0F172A"
+borderColor = "#E7E2D6"
+linkColor = "#7A123A"
+baseRadius = "small"
+font = "Hanken Grotesk:https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
+headingFont = "Epilogue:https://fonts.googleapis.com/css2?family=Epilogue:wght@600;700&display=swap"
+codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&display=swap"
+dataframeHeaderBackgroundColor = "#F8F6F0"
+dataframeBorderColor = "#F0EDE4"
 
 [theme.sidebar]
-backgroundColor = "#F3E9DB"
-secondaryBackgroundColor = "#FFFFFF"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F8F6F0"
+borderColor = "#E7E2D6"
 
 [client]
 toolbarMode = "minimal"

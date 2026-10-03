@@ -1,7 +1,7 @@
 import streamlit as st
 
 from common import integer, load_monthly, money, period_filter
-from theme import hero, month_label
+from theme import banner, hero, month_label, question_card
 
 
 active_months = period_filter()
@@ -14,15 +14,26 @@ monthly_filtered = monthly[monthly["month"].isin(active_months)].copy()
 # HEADER
 # ---------------------------------------------------------------------
 
+period_badge = (
+    f"Abidjan · {month_label(min(active_months))} – {month_label(max(active_months))}"
+    if active_months
+    else "Abidjan"
+)
+
 hero(
     eyebrow="Awalé Boissons",
     title="Marketing Decision Cockpit",
     text=(
-        "Vue décisionnelle mensuelle — données observées, qualité des données "
+        "Vue décisionnelle mensuelle : données observées, qualité des données "
         "et signaux disponibles. Les résultats ne constituent pas une "
         "attribution causale des ventes aux canaux."
     ),
-    pills=["Données observées", "Qualité des données", "Sans attribution causale"],
+    pills=[
+        ("verified", "Données observées", "Aucune projection"),
+        ("rule", "Qualité des données", "Tests dbt automatisés"),
+        ("hub", "Sans attribution causale", "Associations, pas causes"),
+    ],
+    badge=period_badge,
 )
 
 
@@ -44,6 +55,27 @@ unknown_coverage_months = monthly_filtered.loc[
 
 st.write("")
 
+if missing_days > 0:
+    incomplete = monthly_filtered.loc[
+        monthly_filtered["missing_sales_days"].fillna(0) > 0, "month"
+    ]
+    banner(
+        "warning",
+        "Avertissement de complétude — " + ", ".join(month_label(m) for m in incomplete),
+        "La période sélectionnée contient des jours sans données de ventes. "
+        "Les comparaisons doivent tenir compte de cette couverture.",
+        tag=f"{integer(missing_days)} j manquants",
+    )
+
+if not unknown_coverage_months.empty:
+    banner(
+        "warning",
+        "Couverture des ventes inconnue",
+        "Mois concernés : "
+        + ", ".join(month_label(m) for m in unknown_coverage_months)
+        + ". Ces mois ne doivent pas être lus comme complets.",
+    )
+
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -59,35 +91,36 @@ with col4:
     st.metric("Jours de ventes manquants", integer(missing_days))
 
 
-if missing_days > 0:
-    st.warning(
-        "Attention : la période sélectionnée contient des jours sans données "
-        "de ventes. Les comparaisons doivent tenir compte de cette couverture."
-    )
-
-if not unknown_coverage_months.empty:
-    st.warning(
-        "Couverture des ventes inconnue pour : "
-        + ", ".join(month_label(m) for m in unknown_coverage_months)
-        + ". Ces mois ne doivent pas être lus comme complets."
-    )
-
-
 # ---------------------------------------------------------------------
-# NAVIGATION RAPIDE
+# NAVIGATION PAR QUESTION MÉTIER
 # ---------------------------------------------------------------------
 
-st.write("")
+st.markdown(
+    '<div class="subsection"><span class="subsection-title">Exploration par question métier</span>'
+    '<span class="subsection-sub">Chaque carte ouvre la page correspondante</span></div>',
+    unsafe_allow_html=True,
+)
 
-col1, col2, col3 = st.columns(3)
+QUESTIONS = [
+    ("marketing", "views/marketing.py", "Où va l'argent ?", "Marketing",
+     "Dépenses de campagne par canal, comparées au plan média.", ":material/payments:"),
+    ("sales", "views/sales.py", "Que se passe-t-il côté ventes ?", "Ventes",
+     "CA net, unités, couverture des données et mix produit.", ":material/trending_up:"),
+    ("customers", "views/customers.py", "Que disent les clients ?", "Voix client",
+     "Sentiment, thèmes, produits mentionnés et commandes WhatsApp.", ":material/forum:"),
+    ("recommendation", "views/recommendation.py", "Que faire ensuite ?", "Recommandation",
+     "Répartition proposée des 15 M FCFA et cadre de test.", ":material/lightbulb:"),
+    ("report", "views/report.py", "Rapport mensuel IA", "Synthèse",
+     "Bilan du mois : créer, mettre à jour, lire et télécharger.", ":material/auto_awesome:"),
+    ("ask", "views/ask_data.py", "Demander à l'IA", "Ask the Data",
+     "Posez une question en français sur les ventes ou les dépenses.", ":material/smart_toy:"),
+]
 
-with col1:
-    st.page_link("views/marketing.py", label="Où va l'argent ?", icon=":material/payments:")
-    st.page_link("views/sales.py", label="Que se passe-t-il côté ventes ?", icon=":material/trending_up:")
+for start in range(0, len(QUESTIONS), 3):
+    columns = st.columns(3)
 
-with col2:
-    st.page_link("views/customers.py", label="Que disent les clients ?", icon=":material/forum:")
-    st.page_link("views/recommendation.py", label="Que faire ensuite ?", icon=":material/lightbulb:")
-
-with col3:
-    st.page_link("views/report.py", label="Rapport mensuel IA", icon=":material/auto_awesome:")
+    for column, (key, page, question, tag, description, page_icon) in zip(
+        columns, QUESTIONS[start:start + 3]
+    ):
+        with column:
+            question_card(key, page, question, tag, description, page_icon)

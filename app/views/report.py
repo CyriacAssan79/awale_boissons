@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from common import DB_PATH, get_language_model, load_monthly
-from theme import card, month_label, section
+from theme import banner, card, icon, month_label, section
 
 
 REPORTS_DIR = Path("outputs/reports")
@@ -16,18 +16,18 @@ FR_MONTHS_FULL = [
     "juillet", "août", "septembre", "octobre", "novembre", "décembre",
 ]
 
-# Clé de carte (style CSS) et icône de chaque section du rapport.
+# Clé de carte (style CSS) et icône Material de chaque section du rapport.
 SECTIONS = {
-    "Synthèse": ("synthese", "1."),
-    "Points d'attention": ("attention", "2."),
-    "Points positifs": ("positifs", "3."),
-    "Ventes": ("ventes", "4."),
-    "Voix du client": ("voix", "5."),
-    "Où va l'argent ?": ("argent", "6."),
-    "Produits": ("produits", "7."),
-    "Commandes WhatsApp": ("whatsapp", "8."),
-    "WhatsApp": ("whatsapp", "9."),
-    "Conclusion": ("conclusion", "10."),
+    "Synthèse": ("synthese", "insights"),
+    "Points d'attention": ("attention", "warning"),
+    "Points positifs": ("positifs", "trending_up"),
+    "Ventes": ("ventes", "storefront"),
+    "Voix du client": ("voix", "sentiment_satisfied"),
+    "Où va l'argent ?": ("argent", "payments"),
+    "Produits": ("produits", "local_drink"),
+    "Commandes WhatsApp": ("whatsapp", "chat"),
+    "WhatsApp": ("whatsapp", "chat"),
+    "Conclusion": ("conclusion", "flag"),
 }
 
 # Disposition : une ligne = une liste de sections affichées côte à côte.
@@ -71,11 +71,11 @@ def split_sections(report: str) -> dict[str, str]:
 
 
 def report_card(title: str, body: str) -> None:
-    key, icon = SECTIONS.get(title, (re.sub(r"\W+", "_", title.lower()), "📄"))
+    key, icon_name = SECTIONS.get(title, (re.sub(r"\W+", "_", title.lower()), "description"))
 
     with card(f"report_{key}"):
         st.markdown(
-            f'<div class="report-section-title"><span>{icon}</span>{title}</div>',
+            f'<div class="report-section-title">{icon(icon_name, "report-icon")}{title}</div>',
             unsafe_allow_html=True,
         )
         st.markdown(body)
@@ -92,7 +92,7 @@ def show_report(report: str, month: pd.Timestamp, path: Path) -> None:
             <div class="report-head">
                 <div class="report-eyebrow">Rapport mensuel</div>
                 <div class="report-title">Bilan de {full_month_label(month)}</div>
-                <div class="report-meta">Rapport du {saved_at:%d/%m/%Y à %H:%M}</div>
+                <div class="report-meta">{icon("schedule")}Rapport du {saved_at:%d/%m/%Y à %H:%M}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -227,9 +227,11 @@ if generate:
 result = st.session_state.get(state_key)
 
 if result is not None and result.llm_used and not result.llm_valid:
-    st.info(
+    banner(
+        "warning",
+        "Information qualité",
         "La synthèse rédigée automatiquement n'a pas passé nos vérifications : "
-        "elle a été remplacée par un résumé direct des constats du mois."
+        "elle a été remplacée par un résumé direct des constats du mois.",
     )
 
 if report_path.exists():

@@ -3,7 +3,7 @@ import plotly.express as px
 import streamlit as st
 
 from common import integer, load_query, period_filter, safe_query, table_exists, totals
-from theme import BOUYE, PRODUCT_COLORS, SENTIMENT_COLORS, card, card_title, section, show_chart, subsection
+from theme import GINGEMBRE_DARK, GRID, PRODUCT_COLORS, SENTIMENT_COLORS, card, card_title, section, show_chart, subsection
 
 
 active_months = period_filter()
@@ -136,7 +136,7 @@ if social_available and not social.empty:
                 title="Thèmes mentionnés",
                 labels={"theme": "", "comments": "Commentaires"},
                 text="comments",
-                color_discrete_sequence=[BOUYE],
+                color_discrete_sequence=[GINGEMBRE_DARK],
             )
 
             fig_themes.update_traces(
@@ -150,7 +150,7 @@ if social_available and not social.empty:
                 showgrid=False,
                 title=None,
             )
-            fig_themes.update_xaxes(showgrid=True, gridcolor="#F0E7DA", title=None)
+            fig_themes.update_xaxes(showgrid=True, gridcolor=GRID, title=None)
 
             show_chart(fig_themes, height=340)
 

@@ -45,7 +45,7 @@ with card("sales_chart"):
         line=dict(color=BISSAP, width=3),
         marker=dict(size=10, color=BISSAP, line=dict(color="#fff", width=2)),
         fill="tozeroy",
-        fillcolor="rgba(156, 31, 63, 0.10)",
+        fillcolor="rgba(122, 18, 58, 0.08)",
     )
     fig_sales.update_xaxes(type="category")
     fig_sales.update_yaxes(tickformat=".2s", title=None)

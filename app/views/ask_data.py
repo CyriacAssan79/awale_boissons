@@ -312,13 +312,20 @@ with toggle_col:
         ),
     )
 
-example_cols = st.columns(3)
 clicked = None
 
-for i, example in enumerate(EXAMPLES):
-    with example_cols[i % 3]:
-        if st.button(example, key=f"ask_example_{i}", width="stretch"):
-            clicked = example
+with st.container(key="ask_examples"):
+    example_cols = st.columns(3)
+
+    for i, example in enumerate(EXAMPLES):
+        with example_cols[i % 3]:
+            if st.button(
+                example,
+                key=f"ask_example_{i}",
+                icon=":material/north_east:",
+                width="stretch",
+            ):
+                clicked = example
 
 
 # ---------------------------------------------------------------------

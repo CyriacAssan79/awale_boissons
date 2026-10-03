@@ -5,7 +5,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from theme import apply_theme, footer, sidebar_brand, sidebar_nav_section
+from theme import apply_theme, footer, sidebar_active_link, sidebar_brand, sidebar_nav_section
 
 
 # Le rapport IA importe le package `ai`, situé à la racine du projet.
@@ -23,7 +23,7 @@ st.set_page_config(
 
 apply_theme()
 
-sidebar_brand("Awalé Boissons", "Marketing Decision Cockpit", "🥤")
+sidebar_brand("Awalé Boissons", "Marketing Decision Cockpit")
 
 
 # Pages regroupées par rubrique dans la barre latérale.
@@ -46,6 +46,7 @@ NAVIGATION = {
 # Menu natif masqué : les liens sont placés sous le logo et au-dessus des
 # filtres, que la navigation native afficherait sinon en tête de la barre.
 page = st.navigation(NAVIGATION, position="hidden")
+sidebar_active_link(page.url_path)
 
 for group, group_pages in NAVIGATION.items():
     sidebar_nav_section(group)
